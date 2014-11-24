@@ -1,0 +1,17 @@
+<nav class="masthead navbar navbar-default">
+    <div class="navbar-header">
+        <a class="navbar-brand" href="#/home"><i class="fa fa-bullseye"></i>BULLSEYE</a>
+    </div>
+    <div class="entity-search">
+        <select class="form-control" ng-model="searchData.filters.searchType" ng-options="t.name for t in searchData.filters.searchTypes"></select>
+        <input type="text" class="form-control" ng-model="searchData.filters.query"/>
+        <a role="button" type="button" class="btn btn-primary" ng-class="{enabled: hasSearchField()}" ng-click="nickSearch()">
+            <i class="fa fa-spinner fa-spin" ng-class="{'zero-width': !isSearching()}"></i> <!-- class reacts faster than ng-show and ng-if -->
+            Search
+        </a>
+        <a role="button" type="button" class="btn btn-primary" ng-click="deduplicate()">
+            <i class="fa fa-spinner fa-spin" ng-class="{'zero-width': !isDeduping()}"></i>
+            Deduplicate
+        </a>
+    </div>
+</nav>

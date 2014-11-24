@@ -1,0 +1,17 @@
+.idea
+*.iml
+*.swp
+*.swap
+*.~
+*#
+#*
+*.log
+*.orig
+*ensime*
+*.#*
+node_modules
+vendor
+nodejs
+node-*
+target
+*~

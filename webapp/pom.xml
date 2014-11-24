@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>bullseye</artifactId>
+        <groupId>org.oseraf</groupId>
+        <version>0.0.1</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>bullseye-webapp</artifactId>
+    <packaging>war</packaging>
+
+    <properties>
+        <uidir.pathname>${project.basedir}/src/main/ui</uidir.pathname>
+    </properties>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+            </resource>
+            <resource>
+                <directory>src/main/resources-filter</directory>
+                <filtering>true</filtering>
+            </resource>
+            <resource>
+                <directory>src/main/webapp-filter</directory>
+                <filtering>true</filtering>
+                <targetPath>${project.build.directory}/${project.artifactId}-${project.version}</targetPath>
+            </resource>
+        </resources>
+        <plugins>
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>2.6</version>
+                <executions>
+                    <execution>
+                        <id>copy-resources</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/non-packaged-resources</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>src/main/non-packaged-resources-filter</directory>
+                                    <filtering>true</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <version>2.4</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>Runner</mainClass>
+                        </manifest>
+                    </archive>
+                    <webResources>
+                        <resource>
+                            <directory>src/main/webapp</directory>
+                            <filtering>true</filtering>
+                        </resource>
+                    </webResources>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>prepare-war</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>exploded</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-maven-plugin</artifactId>
+                <version>9.2.2.v20140723</version>
+                <configuration>
+                    <scanIntervalSeconds>10</scanIntervalSeconds>
+                    <webApp>
+                        <contextPath>/bullseye</contextPath>
+                        <baseResource implementation="org.eclipse.jetty.util.resource.ResourceCollection">
+                            <resourcesAsCSV>${project.basedir}/src/main/webapp,${project.build.directory}/${project.artifactId}-${project.version}</resourcesAsCSV>
+                        </baseResource>
+                        <maxFormContentSize>500000</maxFormContentSize>
+                        <jettyEnvXml>${project.build.outputDirectory}/jetty-env.xml</jettyEnvXml>
+                    </webApp>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.7</version>
+                <executions>
+                    <execution>
+                        <id>grunt-build</id>
+                        <phase>prepare-package</phase>
+                        <configuration>
+                            <target name="building">
+                                <echo>${uidir.pathname}
+                                    ###################################################
+                                    ##                  NPM INSTALL                  ##
+                                    ###################################################
+                                </echo>
+                                <exec executable="cmd" dir="${uidir.pathname}" osfamily="windows" failonerror="true">
+                                    <arg line="/c npm.cmd install"/>
+                                </exec>
+                                <exec executable="bash" dir="${uidir.pathname}" osfamily="unix" failonerror="true">
+                                    <arg line="-c 'npm install'"/>
+                                </exec>
+                                <echo>${uidir.pathname}
+                                    ###################################################
+                                    ##                 BOWER INSTALL                 ##
+                                    ###################################################
+                                </echo>
+                                <exec executable="cmd" dir="${uidir.pathname}" osfamily="windows" failonerror="true">
+                                    <arg line="/c node.exe ${uidir.pathname}/node_modules/bower/bin/bower install"/>
+                                </exec>
+                                <exec executable="bash" dir="${uidir.pathname}" osfamily="unix" failonerror="true">
+                                    <arg line="-c 'node ${uidir.pathname}/node_modules/bower/bin/bower install'"/>
+                                </exec>
+                                <echo>${uidir.pathname}
+                                    ###################################################
+                                    ##                 WEBAPP INSTALL                ##
+                                    ###################################################
+                                </echo>
+                                <exec executable="cmd" dir="${uidir.pathname}" osfamily="windows"
+                                      failonerror="true">
+                                    <arg line="/c node.exe ${uidir.pathname}/node_modules/grunt-cli/bin/grunt --force"/>
+                                </exec>
+                                <exec executable="bash" dir="${uidir.pathname}" osfamily="unix"
+                                      failonerror="true">
+                                    <arg line="-c 'node ${uidir.pathname}/node_modules/grunt-cli/bin/grunt'"/>
+                                </exec>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>main-class-placement</id>
+                        <phase>prepare-package</phase>
+                        <configuration>
+                            <tasks>
+                                <copy todir="${project.build.directory}/${project.artifactId}-${project.version}/">
+                                    <fileset dir="${project.build.directory}/classes/">
+                                        <include name="Runner.class" />
+                                        <include name="application.conf" />
+                                    </fileset>
+                                </copy>
+                            </tasks>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>scala-compile</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>scala-test-compile</id>
+                        <phase>test-compile</phase>
+                        <goals>
+                            <goal>testCompile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <recompileMode>incremental</recompileMode>
+                    <jvmArgs>
+                        <jvmArg>-Xms64m</jvmArg>
+                        <jvmArg>-Xmx4096m</jvmArg>
+                    </jvmArgs>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>jetty-classpath</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>unpack-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <includeGroupIds>org.eclipse.jetty,javax.servlet,com.typesafe</includeGroupIds>
+                            <excludeArtifactIds>jsp-api,jstl,akka-actor_2.10</excludeArtifactIds>
+                            <excludes>META-INF/ECLIPSEF.*</excludes>
+                            <outputDirectory>
+                                ${project.build.directory}/${project.artifactId}-${project.version}
+                            </outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+            <version>${scala.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-reflect</artifactId>
+            <version>${scala.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>bullseye-ikanow</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>bullseye-service</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.tinkerpop.blueprints</groupId>
+            <artifactId>blueprints-rexster-graph</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.scalatra</groupId>
+            <artifactId>scalatra_${scala.major.version}</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-api</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.scalatra</groupId>
+            <artifactId>scalatra-specs2_${scala.major.version}</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.scalatra</groupId>
+            <artifactId>scalatra-json_2.10</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.scalatra</groupId>
+            <artifactId>scalatra-scalate_${scala.major.version}</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.json4s</groupId>
+            <artifactId>json4s-jackson_2.10</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.typesafe</groupId>
+            <artifactId>config</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-servlets</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-server</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-webapp</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-jsp</artifactId>
+        </dependency>
+    </dependencies>
+
+</project>

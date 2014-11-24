@@ -1,0 +1,34 @@
+.masthead
+    height 50px
+    margin-left -15px
+    margin-right -10px
+    background linear-gradient(top, lighten(mastheadBg, 10%), mastheadBg)
+    border-radius 0
+    &.navbar-default
+        color mastheadColor
+        .navbar-brand
+            color mastheadColor
+            &:hover
+                color darken(mastheadColor, 30%)
+        .navbar-header
+            i
+                margin-right 10px
+    .entity-search
+        float right
+        select
+            float left
+            width 150px
+            margin 5px 10px 5px 10px
+        input
+            float left
+            width 250px
+            margin 5px 10px 5px 0px
+        a
+            float left
+            width 110px
+            margin 5px 10px 5px 0px
+    .zero-width
+        width 0px
+        margin 0px
+        padding 0px
+        overflow hidden

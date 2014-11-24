@@ -1,0 +1,90 @@
+.merge-modal-window
+    max-height 75%
+    overflow hidden
+    .sub-panel-heading
+        background-color #333
+        color #fff
+        border-top-left-radius 8px
+        border-top-right-radius 8px
+        height 20px
+        overflow auto
+        text-align center
+    .sub-panel-row
+        height calc(50% - 5px)
+    .sub-panel
+        width calc(50% - 10px)
+        height 100%
+        margin 5px
+        padding 0
+        float left
+        border 1px solid #ccc
+        border-radius 8px
+    .sub-panel-wrapper
+        height 100%
+    .sub-panel-body
+        border 1px solid #ccc
+        border-top 0
+        background-color #fff
+        border-bottom-left-radius 8px
+        border-bottom-right-radius 8px
+        height calc(100% - 20px) // all but heading height
+        overflow auto
+        box-shadow 1px 1px 1px 1px rgba(0,0,0,0.3)
+        &.final-attr-body
+            height calc(100% - 55px) // all but heading height and merge-add-attrs height
+    .merge-pill
+        border 1px solid #ccc
+        padding 3px 5px 5px 5px // buttons and labels are off-vertical-center if you use consistent padding
+        margin 5px 10px 5px 10px
+        border-radius 8px
+        text-align left
+        button // we don't play well with the btn-xs class
+            height 17px
+            width 17px
+            padding 0 3px
+            line-height 1
+    .merge-add-attrs
+        height 35px
+        border 1px solid #ccc
+        border-radius 8px
+        background-color #fff
+        padding 5px
+        box-shadow 1px 1px 1px 1px rgba(0,0,0,0.3)
+        label
+            margin-right 5px
+            margin-top 3px
+            width calc(15% - 5px)
+            float left
+        button.add-label
+            width 17px
+            height 17px
+            margin-top -2px
+            padding 0 3px
+            line-height 1
+        input
+            height 25px
+            float left
+            width calc(35% - 15px)
+            margin-right 5px
+    .modal-dialog
+        height calc(100% - 60px)
+        width 800px
+        .modal-content
+            height 100%
+            .merge-modal
+                height 100%  
+                border 0
+                margin 0
+                .panel-heading
+                    height 50px
+                    background-color #333
+                    color #fff
+                    text-align center
+                    text-transform capitalize
+                .panel-body
+                    height calc(100% - 100px)
+                    background-color #ccc
+                .panel-footer
+                    height 50px
+                    text-align center
+                    background-color #333

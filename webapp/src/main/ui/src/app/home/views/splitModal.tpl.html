@@ -1,0 +1,78 @@
+<div class="split-modal panel panel-default">
+    <div class="panel-heading">Split - {{entity.entity.id}}</div>
+    <div class="panel-body">
+        <div class="original-entity">
+            <div class="attrs">
+                <div class="modal-heading">Attributes</div>
+                <div class="attr-item-cnt">
+                    <div class="attr-item" ng-repeat="(k, v) in entity.entity.attrs">
+                        <label class="label label-default label-key">{{k}}</label>
+                        <label class="label label-default label-value">{{v}}</label>
+                    </div>
+                </div>
+            </div>
+            <div class="edges">
+                <div class="modal-heading">Incoming Edges</div>
+                <div class="incoming-edges">
+                    <div class="edge-item" ng-repeat="edge in getIncomingEdges(entity.entity)">
+                        <label class="label label-default label-entity">{{edge.source}}</label>
+                        <i class="fa fa-long-arrow-right"></i>
+                        <label class="label label-default label-entity">{{edge.target}}</label>
+                    </div>
+                </div>
+                <div class="modal-heading">Outgoing Edges</div>
+                <div class="outgoing-edges">
+                    <div class="edge-item" ng-repeat="edge in getOutgoingEdges(entity.entity)">
+                        <label class="label label-default label-entity">{{edge.source}}</label>
+                        <i class="fa fa-long-arrow-right"></i>
+                        <label class="label label-default label-entity">{{edge.target}}</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="split-entity" ng-repeat="s in splits">
+            <div class="attrs">
+                <div class="modal-heading">Attributes</div>
+                <div class="attr-item-cnt">
+                    <div class="attr-item" ng-repeat="(k, v) in s.attrs">
+                        <button ng-click="deleteAttr(s.attrs, k)" class="btn btn-sm btn-danger"><i class="fa fa-times"></i></button>
+                        <label class="label label-default label-key">{{k}}</label>
+                        <label class="label label-default label-value">{{v}}</label>
+                    </div>
+                </div>
+                <div class="custom-attr">
+                    <label class="label label-default label-key">Key:</label>
+                    <input class="form-control" type="text" ng-model="s.custom.key" />
+                    <label class="label label-default label-value">Value:</label>
+                    <input class="form-control" type="text" ng-model="s.custom.value" />
+                    <button ng-click="addCustomAttribute(s)" class="add-label btn btn-sm btn-success"><i class="fa fa-plus"></i></button>
+                </div>
+            </div>
+            <div class="edges">
+                <div class="modal-heading">Incoming Edges</div>
+                <div class="incoming-edges">
+                    <div class="edge-item" ng-repeat="edge in getIncomingEdges(s)">
+                        <button ng-click="deleteEdge(s.edges, edge)" class="btn btn-sm btn-danger"><i class="fa fa-times"></i></button>
+                        <label class="label label-default label-entity">{{edge.source}}</label>
+                        <i class="fa fa-long-arrow-right"></i>
+                        <label class="label label-default label-entity">{{edge.target}}</label>
+                    </div>
+                </div>
+                <div class="modal-heading">Outgoing Edges</div>
+                <div class="outgoing-edges">
+                    <div class="edge-item" ng-repeat="edge in getOutgoingEdges(s)">
+                        <button ng-click="deleteEdge(s.edges, edge)" class="btn btn-sm btn-danger"><i class="fa fa-times"></i></button>
+                        <label class="label label-default label-entity">{{edge.source}}</label>
+                        <i class="fa fa-long-arrow-right"></i>
+                        <label class="label label-default label-entity">{{edge.target}}</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="panel-footer">
+        <button class="add-split btn btn-sm btn-success" ng-click="addSplit()"><i class="fa fa-plus"></i>Add Split</button>
+        <button class="btn btn-sm btn-success" ng-click="ok()">Submit</button>
+        <button class="btn btn-sm btn-danger" ng-click="cancel()">Cancel</button>
+    </div>
+</div>

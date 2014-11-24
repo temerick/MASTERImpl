@@ -1,0 +1,42 @@
+.deduplicate-modal-window
+    max-height 75%
+    overflow hidden
+    .modal-dialog
+        height calc(100% - 60px)
+        .modal-content
+            height 100%
+            .deduplicate-modal
+                border 0
+                margin 0
+                height 100%
+                .panel-heading
+                    height 50px
+                    background-color #333
+                    color #fff
+                    text-align center
+                    text-transform capitalize
+                .panel-body
+                    height calc(100% - 100px)
+                    overflow auto
+                    background-color #ccc
+                    .deduplication-item
+                        border 1px solid #333
+                        box-shadow 2px 2px 2px 2px rgba(0,0,0,0.7)
+                        background-color #fff
+                        margin-bottom 10px
+                        padding 10px
+                        border-radius 8px
+                        .dedupe-label
+                            margin-right 2px
+                    button
+                        margin-top -5px
+                        float right
+                    .deduplication-selection-icon
+                        float right
+                        margin-right 10px
+                .panel-footer
+                    height 50px
+                    text-align center
+                    background-color #333
+                    button
+                        margin-right 10px
