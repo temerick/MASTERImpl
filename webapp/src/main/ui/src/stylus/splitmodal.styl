@@ -1,0 +1,136 @@
+.split-modal-window
+    max-height 75%
+    overflow hidden
+    .modal-dialog
+        height calc(100% - 60px)
+        width 800px
+        .modal-content
+            height 100%
+            .split-modal
+                height 100%
+                border 0
+                margin 0
+                .panel-heading
+                    height 50px
+                    background-color #333
+                    color #fff
+                    text-align center
+                    text-transform capitalize
+                .panel-body
+                    height calc(100% - 100px)
+                    overflow auto
+                    background-color #ccc
+                    .split-entity
+                        .custom-attr
+                            height 35px
+                            border 1px solid #ccc
+                            border-radius 8px
+                            background-color #fff
+                            padding 5px
+                            width 100%
+                            label
+                                margin-right 5px
+                                margin-top 3px
+                                width calc(15% - 5px)
+                                float left
+                            input
+                                height 25px
+                                float left
+                                width calc(35% - 15px)
+                                margin-right 5px
+                            button
+                                width 17px
+                                height 17px
+                                margin-top -2px
+                                padding 0 3px
+                                line-height 1
+                        height 240px
+                        width 100%
+                        background-color #777
+                        border-radius 8px
+                        margin-bottom 10px
+                        .attr-item-cnt
+                            height calc(100% - 55px)
+                    .original-entity
+                        width 100%
+                        height 220px
+                        border-radius 8px
+                        margin-bottom 10px
+                        background-color #F5C690
+                        box-shadow 0px 2px 2px 2px rgba(0,0,0,0.4)
+                        .attr-item-cnt
+                            height calc(100% - 20px)
+                    .attrs
+                        height calc(100% - 10px)
+                        width calc(50% - 15px)
+                        margin 5px
+                        padding 0
+                        // display inline-block
+                        float left
+                    .edges
+                        height calc(100% - 10px)
+                        width calc(50% - 15px)
+                        margin 5px
+                        padding 0
+                        // display inline-block
+                        float left
+                    .attr-item-cnt
+                        width 100%
+                        overflow auto
+                        border-bottom-left-radius 8px
+                        border-bottom-right-radius 8px
+                        background-color #fff
+                        .attr-item
+                            border-radius 8px
+                            background-color #ccc
+                            padding 3px 5px 5px 5px // buttons and labels are off-vertical-center if you use consistent padding
+                            margin 5px 10px 5px 10px
+                            button
+                                height 17px
+                                width 17px
+                                padding 0 3px
+                                line-height 1
+                    .incoming-edges
+                        width 100%
+                        height calc(50% - 25px)
+                        overflow auto
+                        border-bottom-left-radius 8px
+                        border-bottom-right-radius 8px
+                        background-color #fff
+                        margin-bottom 5px
+                    .outgoing-edges
+                        width 100%
+                        height calc(50% - 20px)
+                        overflow auto
+                        border-bottom-left-radius 8px
+                        border-bottom-right-radius 8px
+                        background-color #fff
+                        margin 0
+                    .edge-item
+                        border-radius 8px
+                        background-color #ccc
+                        padding 3px 5px 5px 5px // buttons and labels are off-vertical-center if you use consistent padding
+                        margin 5px 10px 5px 10px
+                        button
+                            height 17px
+                            width 17px
+                            padding 0 3px
+                            line-height 1
+                    .modal-heading
+                        height 20px
+                        color #fff
+                        background-color #333
+                        text-align center
+                        border-top-left-radius 8px
+                        border-top-right-radius 8px
+                .panel-footer
+                    height 50px
+                    text-align center
+                    background-color #333
+                    button.add-split
+                        position absolute
+                        left 10px
+                        i
+                            margin-right 5px
+                    button
+                        margin-right 10px

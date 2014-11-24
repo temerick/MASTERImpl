@@ -1,0 +1,72 @@
+<div class="merge-modal panel panel-default">
+    <div class="panel-heading">Merge</div>
+    <div class="panel-body">
+        <div class="sub-panel-row">
+            <div class="conflict-attr-group sub-panel">
+                <div class="merge-attrs sub-panel-wrapper">
+                    <div class="merge-attr-heading sub-panel-heading">Conflicting Attributes</div>
+                    <div class="merge-attr-body sub-panel-body">
+                        <div class="merge-pill merge-attr" ng-repeat="attr in conflictingAttrs">
+                            <button ng-click="addAttribute(attr)" class="attr-add btn btn-xs btn-success"><i class="fa fa-plus"></i></button>
+                            <label class="label label-default label-key">{{attr.key}}</label>
+                            <label class="label label-default label-value">{{attr.val}}</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="final-attr-group sub-panel">
+                <div class="sub-panel-wrapper">
+                    <div class="merge-attr-heading sub-panel-heading">Final Attributes</div>
+                    <div class="final-attr-body sub-panel-body">
+                        <div class="final-attrs">
+                            <div class="merge-pill merge-attr" ng-repeat="(k,v) in finalAttrs">
+                                <button ng-click="removeAttribute(k,v)" class="attr-add btn btn-xs btn-danger"><i class="fa fa-minus"></i></button>
+                                <label class="label label-default label-key">{{k}}</label>
+                                <label class="label label-default label-value">{{v}}</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="merge-add-attrs">
+                        <label class="label label-default label-key">Key:</label>
+                        <input type="text" ng-model="custom.key" />
+                        <label class="label label-default label-value">Value:</label>
+                        <input type="text" ng-model="custom.value" />
+                        <button ng-click="addCustomAttribute()" class="add-label btn btn-xs btn-success"><i class="fa fa-plus"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="sub-panel-row">
+            <div class="merge-incoming-edges sub-panel">
+                <div class="sub-panel-wrapper">
+                    <div class="merge-edge-heading sub-panel-heading">Incoming Edges</div>
+                    <div class="edge-item-cnt sub-panel-body">
+                        <div class="merge-pill merge-edge" ng-repeat="edge in finalIncomingEdges">
+                            <button ng-click="removeEdge(edge)" class="rm-edge btn btn-xs btn-danger"><i class="fa fa-minus"></i></button>
+                            <label class="label label-default label-entity">{{edge.source}}</label>
+                            <i class="fa fa-long-arrow-right"></i>
+                            <label class="label label-default label-entity">{{edge.target}}</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="merge-outgoing-edges sub-panel">
+                <div class="sub-panel-wrapper">
+                    <div class="merge-edge-heading sub-panel-heading">Outgoing Edges</div>
+                    <div class="edge-item-cnt sub-panel-body">
+                        <div class="merge-pill merge-edge" ng-repeat="edge in finalOutgoingEdges">
+                            <button ng-click="removeEdge(edge)" class="rm-edge btn btn-xs btn-danger"><i class="fa fa-minus"></i></button>
+                            <label class="label label-default label-entity">{{edge.source}}</label>
+                            <i class="fa fa-long-arrow-right"></i>
+                            <label class="label label-default label-entity">{{edge.target}}</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="panel-footer">
+        <button ng-click="ok()" class="merge btn btn-sm btn-success">Submit</button>
+        <button ng-click="cancel()" class="btn btn-sm btn-danger">Cancel</button>
+    </div>
+</div>
