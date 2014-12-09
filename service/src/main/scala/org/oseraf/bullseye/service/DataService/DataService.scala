@@ -4,9 +4,11 @@ import com.tinkerpop.blueprints.impls.tg.TinkerGraph
 import no.priv.garshol.duke._
 import org.oseraf.bullseye.service.Service
 import org.oseraf.bullseye.store.impl.blueprints.BlueprintsGraphStore
-import org.oseraf.bullseye.store.{EntityStore, IdentifiedEntity}
+import org.oseraf.bullseye.store.{Entity, EntityStore, IdentifiedEntity}
 
-case class BullsEyeEntity(id: String, attrs: Map[String, String] = Map(), edges: Seq[BullsEyeEdge] = Seq())
+case class BullsEyeEntity(id: String, attrs: Map[String, String] = Map(), edges: Seq[BullsEyeEdge] = Seq()) extends Entity {
+  var attributes = attrs
+}
 case class BullsEyeEntityScore(entity: BullsEyeEntity, score: Double)
 //source and target are entity ids
 case class BullsEyeEdge(source: String, target: String, attrs: Map[String, String] = Map())

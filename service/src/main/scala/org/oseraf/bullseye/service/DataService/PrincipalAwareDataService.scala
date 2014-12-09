@@ -1,6 +1,6 @@
 package org.oseraf.bullseye.service.DataService
 
-import org.oseraf.bullseye.store.{Entity, IdentifiedEntity, EntityStore}
+import org.oseraf.bullseye.store.{Entity, EntityStore}
 import java.security.Principal
 
 trait PrincipalAwareDataService extends DataService {
