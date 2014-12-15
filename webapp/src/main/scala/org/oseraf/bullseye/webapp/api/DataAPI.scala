@@ -76,6 +76,7 @@ trait DataAPI extends API with DataService with PrincipalAwareDataService with L
   get("/searchtypes") {
     bullseyeSearchTypes
   }
+  
   private def logUser(p:Principal, methodName:String) = {
     if (p == null) logger.info(methodName + " issued by un-authenticated user")
     else                   logger.info(methodName + " issued by " + p.getName)

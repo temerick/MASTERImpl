@@ -9,6 +9,7 @@ angular.module('bullseye.home', [])
             query: {method: 'GET', isArray: true}
         });
     }])
+    
     .factory('EntityOps', ['$resource', function ($resource) {
         return $resource('rest/data/entity', {}, {
             search: {method: 'GET', isArray: false, url: 'rest/data/search'},
@@ -353,6 +354,7 @@ angular.module('bullseye.home', [])
                 }
             }
         });
+
         $scope.nickSearch = function() {
             $scope.search($scope.searchData.filters.query);
         };
@@ -462,10 +464,14 @@ angular.module('bullseye.home', [])
     }])
     .factory('DataService', ['SearchTypes', 'EntityOps', function (SearchTypes, EntityOps) {
         var searchTypes = [],
+        filterTypes = [],                                                     
         entityData = [],
         linkData = [];
         SearchTypes.query().$promise.then(function (types) {
             searchTypes = types;
+        });
+        FilterTypes.query().$promise.then(function (types) {
+            filterTypes = types;
         });
         return {
             showNeighborhood: function (entityScore) {
@@ -504,6 +510,9 @@ angular.module('bullseye.home', [])
             },
             getSearchTypes: function () {
                 return searchTypes;
+            },
+            getFilterTypes: function() {
+                return filterTypes;
             },
             getEntityData: function () {
                 return entityData;
@@ -658,6 +667,17 @@ angular.module('bullseye.home', [])
                 };
                 scope.round = function(score) {
                     return Math.round(100.0 * score);
+                };
+                scope.getListViewTypes = function() {
+                    var listViewAttrs = [];
+                    _.forEach(data, function(d) {
+                        _.forEach(d.entity.attrs, function(attr) {
+                            if(!_.contains(listViewAttrs, attr)) {
+                                listViewAttrs.push(attr);
+                            }
+                        });
+                    });
+                    return listViewAttrs;
                 };
             }
         };

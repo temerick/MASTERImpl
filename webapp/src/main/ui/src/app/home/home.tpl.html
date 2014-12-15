@@ -9,6 +9,8 @@
     <div class="list-content" ng-show="data.raw.length > 0">
         <div class="list-header">
             <h3>Results</h3>
+            <select class="form-control" ng-model="searchData.filters.searchType" ng-options="t.name for t in searchData.filters.searchTypes"></select>
+            <input type="text" class="form-control" ng-model="searchData.filters.query"/>
             <div class="num-results"><span class="badge">{{data.raw.length}}</span></div>
         </div>
         <list-view data="data.raw" selection="data.selection" resolveitem="resolveItem" splititem="splitItem" showneighborhood="showNeighborhood" remove="removeItem"></list-view>

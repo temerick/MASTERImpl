@@ -13,7 +13,6 @@ import scala.collection.JavaConverters._
 case class IkanowEntity(eId:String, attrs:Map[String,String])
 case class IkanowRelationship(source:IkanowEntity, target:IkanowEntity, attrs:Map[String,String])
 case class IkanowDocument(_id: String, title:String, entities:Seq[Map[String,_]], mediaTypes:Seq[String])
-
 class IkanowRetriever(urlString:String, userName:String, password:String, communities:Iterable[String])
   extends Logging
 {   //this should be an object, but I want parameters -- FIX
