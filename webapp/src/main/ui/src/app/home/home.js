@@ -1,3 +1,4 @@
+/*global $scope  */
 angular.module('bullseye.home', [])
     .config(['$routeProvider', function ($routeProvider) {
         $routeProvider.when('/home', {
@@ -367,9 +368,27 @@ angular.module('bullseye.home', [])
         $scope.isDeduping = function() {
             return $scope.dedupeIsRunning;
         };
+        $scope.listData = {
+            sorts: {
+                sortTypes: [],
+                sortKey: null
+            }
+        };
+        $scope.listSortVal = function(ent) {
+            return ent.entity.attrs[$scope.listData.sorts.sortKey];
+        };
         $scope.$watch(DataService.getEntityData, function (data) {
             $scope.data.raw = data;
+            data.forEach(function(ent) {
+                 _.forEach(ent.entity.attrs, function(v,k) {
+                    if(!_.contains($scope.listData.sorts.sortTypes, k)) {
+                        $scope.listData.sorts.sortTypes.push(k);
+                    }
+                });                                  
+            });
+            $scope.listData.sorts.sortKey = $scope.listData.sorts.sortTypes[0];
         });
+
         $scope.$watch(DataService.transformForNetwork, function (data) {
             $scope.data.network = data;
         }, true);
@@ -379,6 +398,7 @@ angular.module('bullseye.home', [])
                 $scope.searchData.isSearching = false;
             });
         };
+                                                                                       
         $scope.resolve = DataService.resolve; // TODO unused?
         $scope.resolveItem = function (d) {
             EntityOps.resolve({eId: d.entity.id}).$promise.then(function (resolutions) {
@@ -470,9 +490,9 @@ angular.module('bullseye.home', [])
         SearchTypes.query().$promise.then(function (types) {
             searchTypes = types;
         });
-        FilterTypes.query().$promise.then(function (types) {
-            filterTypes = types;
-        });
+        // FilterTypes.query().$promise.then(function (types) {
+        //     filterTypes = types;
+        // });
         return {
             showNeighborhood: function (entityScore) {
                 EntityOps.neighborhood({eId: entityScore.entity.id}).$promise.then(function (neighborhoodGraph) {
@@ -637,7 +657,8 @@ angular.module('bullseye.home', [])
                 resolveItem: '&resolveitem',
                 splitItem: '&splititem',
                 showNeighborhood: '&showneighborhood',
-                remove: '&'
+                remove: '&',
+                listSortVal: '&listsortval'
             },
             templateUrl: 'home/views/listView.tpl.html',
             link: function (scope, element, attrs) {
@@ -667,17 +688,6 @@ angular.module('bullseye.home', [])
                 };
                 scope.round = function(score) {
                     return Math.round(100.0 * score);
-                };
-                scope.getListViewTypes = function() {
-                    var listViewAttrs = [];
-                    _.forEach(data, function(d) {
-                        _.forEach(d.entity.attrs, function(attr) {
-                            if(!_.contains(listViewAttrs, attr)) {
-                                listViewAttrs.push(attr);
-                            }
-                        });
-                    });
-                    return listViewAttrs;
                 };
             }
         };
