@@ -484,15 +484,12 @@ angular.module('bullseye.home', [])
     }])
     .factory('DataService', ['SearchTypes', 'EntityOps', function (SearchTypes, EntityOps) {
         var searchTypes = [],
-        filterTypes = [],                                                     
         entityData = [],
         linkData = [];
         SearchTypes.query().$promise.then(function (types) {
             searchTypes = types;
         });
-        // FilterTypes.query().$promise.then(function (types) {
-        //     filterTypes = types;
-        // });
+
         return {
             showNeighborhood: function (entityScore) {
                 EntityOps.neighborhood({eId: entityScore.entity.id}).$promise.then(function (neighborhoodGraph) {
@@ -530,9 +527,6 @@ angular.module('bullseye.home', [])
             },
             getSearchTypes: function () {
                 return searchTypes;
-            },
-            getFilterTypes: function() {
-                return filterTypes;
             },
             getEntityData: function () {
                 return entityData;
