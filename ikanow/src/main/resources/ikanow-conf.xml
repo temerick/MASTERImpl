@@ -12,8 +12,9 @@
             <param name="sigma" value="1000.0"/>
         </object>
 
-        <object class="org.oseraf.bullseye.ikanow.IkanowTypeComparator"
+        <object class="org.oseraf.bullseye.ikanow.IkanowIgnoreLevenshtein"
                 name="dComparator">
+            <param name="ignores" value="Date,Keyword"/>
         </object>
         
         <property lookup="true">
