@@ -5,7 +5,9 @@ import no.priv.garshol.duke.comparators.Levenshtein
 
 class IkanowIgnoreLevenshtein() extends Comparator {
   val lev = new Levenshtein
-  private var ignores:String = ""
+  private var delim:String =","
+  private var ignores:String =""
+  private lazy val ignoredStrs = ignores.split(delim).toSet
 
   def isTokenized:Boolean = {
     false
@@ -13,8 +15,10 @@ class IkanowIgnoreLevenshtein() extends Comparator {
   def setIgnores(igs:String) = {
     ignores = igs
   }
+  def setDelim(d:String) = {
+    delim = d
+  }
   def compare(v1:String, v2:String):Double = {
-    val ignoredStrs = ignores.split(",")
     if(ignoredStrs.contains(v1) || ignoredStrs.contains(v2)) {
       0.0
     }
