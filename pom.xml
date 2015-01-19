@@ -70,6 +70,31 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
+                <groupId> com.thinkaurelius.titan</groupId>
+                <artifactId>titan-berkeleyje</artifactId>
+                <version>0.4.4</version>
+            </dependency>
+            <dependency>
+                <groupId>com.thinkaurelius.titan</groupId>
+                <artifactId>titan-lucene</artifactId>
+                <version>0.4.4</version>
+            </dependency>
+            <dependency>
+                <groupId>com.michaelpollmeier</groupId>
+                <artifactId>gremlin-scala</artifactId>
+                <version>2.4.1</version>
+            </dependency>
+            <dependency>
+                <groupId>com.thinkaurelius.titan</groupId>
+                <artifactId>titan-core</artifactId>
+                <version>0.4.4</version>
+            </dependency>
+            <dependency>
+	        <groupId>com.thinkaurelius.titan</groupId>
+	        <artifactId>titan-berkeleyje</artifactId>
+	        <version>0.4.4</version>
+            </dependency>
+            <dependency>
                 <groupId>com.tinkerpop.blueprints</groupId>
                 <artifactId>blueprints-rexster-graph</artifactId>
                 <version>${blueprints.version}</version>
@@ -83,6 +108,12 @@
                 <groupId>no.priv.garshol.duke</groupId>
                 <artifactId>duke</artifactId>
                 <version>${duke.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.apache.lucene</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
