@@ -151,4 +151,4 @@ class BlueprintsRelationship(edge: Edge)
     true
 }
 
-class TitanBlueprintsGraphStore(g:Graph) extends BlueprintsGraphStore(g) with TitanIndexedFuzzyVertexSearchPlugin
+class IndexedBlueprintsGraphStore(g:Graph) extends BlueprintsGraphStore(g) with IndexedBlueprintsFuzzyVertexSearchPlugin

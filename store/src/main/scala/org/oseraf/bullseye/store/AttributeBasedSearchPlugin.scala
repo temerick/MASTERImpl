@@ -52,7 +52,7 @@ trait BruteForceAttributeBasedNaivelyFuzzySearchPlugin
     else entity.attribute(key, default)
 }
 
-trait TitanIndexedFuzzyVertexSearchPlugin extends AttributeBasedNaivelyFuzzySearchPlugin with BruteForceAttributeBasedNaivelyFuzzySearchPlugin{
+trait IndexedBlueprintsFuzzyVertexSearchPlugin extends AttributeBasedNaivelyFuzzySearchPlugin with BruteForceAttributeBasedNaivelyFuzzySearchPlugin {
   val store:BlueprintsGraphStore with EntityIterationPlugin
   override def search(key: AttributeContainer.KEY, value:AttributeContainer.VALUE):Iterable[(EntityStore.ID, Double)] = {
     store.graph.query().has(key, CONTAINS, value).vertices().toList.map(v => (v.getId.toString, score(v.getProperty(key), value)))

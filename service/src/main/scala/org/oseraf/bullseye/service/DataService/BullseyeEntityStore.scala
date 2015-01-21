@@ -3,7 +3,7 @@ package org.oseraf.bullseye.service.DataService
 import com.tinkerpop.blueprints.Graph
 import com.typesafe.config.Config
 import org.oseraf.bullseye.store._
-import org.oseraf.bullseye.store.impl.blueprints.{BlueprintsGraphStore, TitanBlueprintsGraphStore}
+import org.oseraf.bullseye.store.impl.blueprints.{IndexedBlueprintsGraphStore, BlueprintsGraphStore}
 
 /**
  * Created by nhamblet.
@@ -57,9 +57,9 @@ class BlueprintsBullseyeEntityStore
   val store: EntityStore = innerStore
 }
 
-class TitanBlueprintsBullseyeEntityStore extends BlueprintsBullseyeEntityStore {
+class IndexedBlueprintsBullseyeEntityStore extends BlueprintsBullseyeEntityStore {
   override def setup(conf: Config) = {
     graph = GraphLoader.createGraph(conf)
-    innerStore = new TitanBlueprintsGraphStore(graph) with WriteEventPublisherPlugin
+    innerStore = new IndexedBlueprintsGraphStore(graph) with WriteEventPublisherPlugin
   }
 }
