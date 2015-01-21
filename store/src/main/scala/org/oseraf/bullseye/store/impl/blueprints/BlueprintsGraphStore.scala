@@ -150,3 +150,5 @@ class BlueprintsRelationship(edge: Edge)
   override def isDirected =
     true
 }
+
+class IndexedBlueprintsGraphStore(g:Graph) extends BlueprintsGraphStore(g) with IndexedBlueprintsFuzzyVertexSearchPlugin

@@ -1,5 +1,6 @@
 package org.oseraf.bullseye.service.DataService
 
+import com.thinkaurelius.titan.core.TitanFactory
 import com.tinkerpop.blueprints._
 import com.typesafe.config.Config
 import org.apache.commons.configuration.BaseConfiguration
@@ -17,7 +18,12 @@ trait GraphLoader extends Service {
       val value = s(1).dropRight(1)         //remove the last quote
       aConf.setProperty(key, value)
     })
-    GraphFactory.open(aConf)
+    if(conf.getBoolean("titan")) {     //kinda sad that we couldn't get this to work with the Blueprints GraphFactory :(
+      TitanFactory.open(aConf)
+    }
+    else {
+      GraphFactory.open(aConf)
+    }
   }
 }
 

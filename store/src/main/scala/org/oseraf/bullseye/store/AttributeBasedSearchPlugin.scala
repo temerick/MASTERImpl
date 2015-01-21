@@ -1,7 +1,10 @@
 package org.oseraf.bullseye.store
 
-import scala.util.{Failure, Success, Try}
+import org.oseraf.bullseye.store.impl.blueprints.BlueprintsGraphStore
 
+import scala.util.{Failure, Success, Try}
+import com.thinkaurelius.titan.core.attribute.Text._
+import scala.collection.JavaConversions._
 /**
  * Created by nhamblet.
  */
@@ -14,7 +17,6 @@ trait AttributeBasedNaivelyFuzzySearchPlugin {
 trait AttributeBasedSearchAvailableOptionsPlugin {
   def searchableAttributes: Iterable[(AttributeContainer.KEY, String)]
 }
-
 
 trait BruteForceAttributeBasedNaivelyFuzzySearchPlugin
   extends AttributeBasedNaivelyFuzzySearchPlugin
@@ -50,6 +52,12 @@ trait BruteForceAttributeBasedNaivelyFuzzySearchPlugin
     else entity.attribute(key, default)
 }
 
+trait IndexedBlueprintsFuzzyVertexSearchPlugin extends AttributeBasedNaivelyFuzzySearchPlugin with BruteForceAttributeBasedNaivelyFuzzySearchPlugin {
+  val store:BlueprintsGraphStore with EntityIterationPlugin
+  override def search(key: AttributeContainer.KEY, value:AttributeContainer.VALUE):Iterable[(EntityStore.ID, Double)] = {
+    store.graph.query().has(key, CONTAINS, value).vertices().toList.map(v => (v.getId.toString, score(v.getProperty(key), value)))
+  }
+}
 
 object AttributeBasedSearch {
   final val FAKE_ID_ATTRIBUTE_KEY = "OSERAF:search/id"
