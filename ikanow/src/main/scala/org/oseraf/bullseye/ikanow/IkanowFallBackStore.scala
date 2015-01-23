@@ -8,6 +8,7 @@ import com.typesafe.scalalogging.slf4j.Logging
 import org.oseraf.bullseye.store.AttributeContainer.{KEY, VALUE}
 import org.oseraf.bullseye.store._
 import org.oseraf.bullseye.store.impl.blueprints.BlueprintsGraphStore
+import org.oseraf.bullseye.store.impl.blueprints.IndexedBlueprintsGraphStore
 
 class IkanowFallBackStore
   extends BullseyeEntityStore
@@ -32,7 +33,7 @@ class IkanowFallBackStore
         ikanowConf.getString("communities").split(",")
       )
     val graph = GraphLoader.createGraph(conf.getConfig("graph"))
-    blueprintsGraphStore = new BlueprintsGraphStore(graph) with WriteEventPublisherPlugin
+    blueprintsGraphStore = new IndexedBlueprintsGraphStore(graph) with WriteEventPublisherPlugin
   }
 
   val mergeIdentifier = new SimpleAddingMergerIdentifier {

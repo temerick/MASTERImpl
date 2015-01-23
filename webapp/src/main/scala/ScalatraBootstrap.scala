@@ -16,7 +16,7 @@ class DefaultServlet extends ScalatraServlet with ScalateSupport {
 class ScalatraBootstrap extends LifeCycle {
   override def init(context: ServletContext) {
     context.mount(new DefaultServlet, "/", "bullseye")
-    context.mount(new DataAPI {}, "/rest/data", "theseus/data")
+    context.mount(new DataAPI {}, "/rest/data", "bullseye/data")
   }
 
 }

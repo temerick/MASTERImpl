@@ -31,18 +31,5 @@
             <low>0.4</low>
             <high>0.6</high>
         </property>
-
-        <!-- <property lookup="true"> -->
-        <!--     <name>hasMaxLatitude</name> -->
-        <!--     <comparator>GeoComparator</comparator> -->
-        <!--     <low>0.4</low> -->
-        <!--     <high>0.7</high> -->
-        <!-- </property> -->
-        <!-- <property lookup="true"> -->
-        <!--     <name>hasMaxLongitude</name> -->
-        <!--     <comparator>GeoComparator</comparator> -->
-        <!--     <low>0.4</low> -->
-        <!--     <high>0.7</high> -->
-        <!-- </property> -->
     </schema>
 </duke>
