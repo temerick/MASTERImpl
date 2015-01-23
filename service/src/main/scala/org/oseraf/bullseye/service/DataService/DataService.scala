@@ -5,6 +5,7 @@ import no.priv.garshol.duke._
 import org.oseraf.bullseye.service.Service
 import org.oseraf.bullseye.store.impl.blueprints.BlueprintsGraphStore
 import org.oseraf.bullseye.store.{Entity, EntityStore, IdentifiedEntity}
+import com.typesafe.scalalogging.slf4j.Logging
 
 case class BullsEyeEntity(id: String, attrs: Map[String, String] = Map(), edges: Seq[BullsEyeEdge] = Seq()) extends Entity {
   var attributes = attrs

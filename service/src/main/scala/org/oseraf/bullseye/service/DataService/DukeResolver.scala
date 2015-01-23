@@ -31,9 +31,9 @@ class DukeResolver(
 
   // how do we handle updates and deletions?
   store.addListener(this)
-  override def handleAddEntityEvent(id: EntityStore.ID) = {
+  override def handleAddEntityEvent(id: EntityStore.ID, entity: Entity) = {
     logger.debug("Detected add entity, updating resolver index")
-    innerDB.index(new EntityRecord(id, store.entity(id)))
+    innerDB.index(new EntityRecord(id, entity))
     innerDB.commit()
   }
   override def handleAddRelationshipEvent(id: EntityStore.ID) = {}

@@ -7,7 +7,6 @@ trait EntityIterationPlugin {
   def entities: Iterable[EntityStore.ID]
 }
 
-
 trait RelationshipIterationPlugin {
   def relationships: Iterable[EntityStore.ID]
 }

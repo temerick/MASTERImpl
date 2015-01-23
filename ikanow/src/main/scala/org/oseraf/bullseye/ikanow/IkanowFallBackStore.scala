@@ -2,6 +2,7 @@ package org.oseraf.bullseye.ikanow
 
 import java.util.UUID
 
+import com.thinkaurelius.titan.core.{TitanTransaction, TitanGraph}
 import org.oseraf.bullseye.service.DataService._
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.slf4j.Logging
@@ -47,10 +48,17 @@ class IkanowFallBackStore
 
   override def search(key: AttributeContainer.KEY, value: AttributeContainer.VALUE): Iterable[(EntityStore.ID, Double)] = {
     if (fallbackSearchAttributes.contains(key)) {
-      logger.debug("Querying ikanow for entity suggestions for " + value)
+      logger.info("Querying ikanow for entity suggestions for " + value)
       val ikanowEntities = ikanowRetriever.getEntities(value)
+      var transaction: TitanTransaction = null
+      if (blueprintsGraphStore.graph.isInstanceOf[TitanGraph]) {
+        transaction = blueprintsGraphStore.graph.asInstanceOf[TitanGraph].newTransaction()
+      }
       for (ent <- ikanowEntities) {
         addEntIfNecessary(ent)
+      }
+      if (transaction != null) {
+        transaction.commit()
       }
     }
     blueprintsGraphStore.search(key, value)

@@ -1,5 +1,6 @@
 package org.oseraf.bullseye.store
 
+import com.typesafe.scalalogging.slf4j.Logging
 import org.oseraf.bullseye.store.impl.blueprints.BlueprintsGraphStore
 
 import scala.util.{Failure, Success, Try}
@@ -52,9 +53,10 @@ trait BruteForceAttributeBasedNaivelyFuzzySearchPlugin
     else entity.attribute(key, default)
 }
 
-trait IndexedBlueprintsFuzzyVertexSearchPlugin extends AttributeBasedNaivelyFuzzySearchPlugin with BruteForceAttributeBasedNaivelyFuzzySearchPlugin {
-  val store:BlueprintsGraphStore with EntityIterationPlugin
+trait IndexedBlueprintsFuzzyVertexSearchPlugin extends AttributeBasedNaivelyFuzzySearchPlugin with BruteForceAttributeBasedNaivelyFuzzySearchPlugin with Logging  {
+  val store:BlueprintsGraphStore
   override def search(key: AttributeContainer.KEY, value:AttributeContainer.VALUE):Iterable[(EntityStore.ID, Double)] = {
+    logger.info("using indexed search")
     store.graph.query().has(key, CONTAINS, value).vertices().toList.map(v => (v.getId.toString, score(v.getProperty(key), value)))
   }
 }

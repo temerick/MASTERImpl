@@ -1,5 +1,6 @@
 package org.oseraf.bullseye.store.impl.blueprints
 
+import com.thinkaurelius.titan.core.TitanGraph
 import com.tinkerpop.blueprints._
 import org.oseraf.bullseye.store._
 
