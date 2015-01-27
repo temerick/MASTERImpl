@@ -19,14 +19,14 @@
         </object>
         
         <property lookup="true">
-            <name>actual_name</name>
+            <name>Name</name>
             <comparator>no.priv.garshol.duke.comparators.Levenshtein</comparator>
             <low>0.3</low>
             <high>0.8</high>
         </property>
 
         <property lookup="true">
-            <name>type</name>
+            <name>Type</name>
             <comparator>dComparator</comparator>
             <low>0.4</low>
             <high>0.6</high>

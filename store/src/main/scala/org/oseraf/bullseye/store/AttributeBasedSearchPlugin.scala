@@ -56,8 +56,10 @@ trait BruteForceAttributeBasedNaivelyFuzzySearchPlugin
 trait IndexedBlueprintsFuzzyVertexSearchPlugin extends AttributeBasedNaivelyFuzzySearchPlugin with BruteForceAttributeBasedNaivelyFuzzySearchPlugin with Logging  {
   val store:BlueprintsGraphStore
   override def search(key: AttributeContainer.KEY, value:AttributeContainer.VALUE):Iterable[(EntityStore.ID, Double)] = {
-    logger.info("using indexed search")
-    store.graph.query().has(key, CONTAINS, value).vertices().toList.map(v => (v.getId.toString, score(v.getProperty(key), value)))
+    logger.trace("Using indexed search")
+    val verts = store.graph.query().has(key, CONTAINS, value).vertices().toList
+    logger.trace(s"Found ${verts.size} answers, scoring")
+    verts.map(v => (v.getId.toString, score(v.getProperty(key), value)))
   }
 }
 
