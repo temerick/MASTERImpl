@@ -103,7 +103,7 @@ class IkanowFallBackStore
         val docEntId = IkanowFallBackStore.ikanowDocumentId(doc._id)
         if (!blueprintsGraphStore.entityExists(docEntId)) {
           blueprintsGraphStore.addEntity(docEntId, new Entity {
-            override var attributes = Map("Title" -> doc.title, "_id" -> doc._id, "Name" -> doc.title)
+            override var attributes = Map("Title" -> doc.title, "DocId" -> doc._id, "Name" -> doc.title)
           })
           doc.entities.foreach(jsonEntity => {
             val ikEnt = ikanowRetriever.makeIkanowEntity(jsonEntity)

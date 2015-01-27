@@ -9,6 +9,7 @@ import org.oseraf.bullseye.service.Service
 import org.oseraf.bullseye.store._
 
 import scala.collection.JavaConversions._
+import scala.util.{Failure, Success, Try}
 
 
 class DukeResolver(
@@ -20,21 +21,34 @@ class DukeResolver(
 
   val keeperProps = dukeConf.getProperties.map(_.getName)
   logger.info("Indexing graph in Duke, properties: " + keeperProps.mkString(", "))
+  private var indexCount = 0
   val innerDB = {
     val db = new LuceneDatabase()
     db.setConfiguration(dukeConf)
-    store.entities.foreach(eid => db.index(new EntityRecord(eid, store.entity(eid))))
+    store.entities.foreach(eid => {
+      Try {
+        db.index(new EntityRecord(eid, store.entity(eid)))
+      } match {
+        case Success(_) => indexCount += 1
+        case Failure(m) => logger.warn(s"Error indexing $eid: $m")
+      }
+    })
     db.commit()
     db
   }
-  logger.info("Done indexing initial graph data: " + innerDB.toString)
+  logger.info(s"Done indexing initial graph data, $indexCount resolvable nodes")
 
   // how do we handle updates and deletions?
   store.addListener(this)
   override def handleAddEntityEvent(id: EntityStore.ID, entity: Entity) = {
-    logger.debug("Detected add entity, updating resolver index")
-    innerDB.index(new EntityRecord(id, entity))
-    innerDB.commit()
+    logger.trace("Detected add entity, updating resolver index")
+    Try {
+      innerDB.index(new EntityRecord(id, entity))
+      innerDB.commit()
+    } match {
+      case Success(_) => indexCount += 1
+      case Failure(m) => logger.warn(s"Error indexing $id: $m")
+    }
   }
   override def handleAddRelationshipEvent(id: EntityStore.ID) = {}
   override def handleUpdateEntityEvent(id: EntityStore.ID) = {}
@@ -73,7 +87,7 @@ class DukeResolver(
       None
     } else {
       val score = dukeProcessor.compare(targetRecord, candidateRecord)
-      logger.trace("Got comparison score " + score + " for " + candidateRecord.getValue("id"))
+      logger.trace("Got comparison score " + score + " for " + candidateRecord.getValue(DukeResolver.ID_ATTRIBUTE))
       if (score >= dukeConf.getThreshold) {
         Some(BullsEyeEntityScore(toBullsEyeEntity(candidateRecord), score))
       } else {
