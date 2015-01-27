@@ -108,8 +108,10 @@ class IkanowFallBackStore
           doc.entities.foreach(jsonEntity => {
             val ikEnt = ikanowRetriever.makeIkanowEntity(jsonEntity)
             addEntIfNecessary(ikEnt)
+            val relId = UUID.randomUUID().toString
+            logger.trace(s"Adding edge $relId connecting $docEntId to ${ikEnt.eId}")
             blueprintsGraphStore.addRelationship(
-              UUID.randomUUID().toString,
+              relId,
               new Relationship {
                 override def connecting(): Iterable[EntityStore.ID] = {
                   Seq(docEntId, ikEnt.eId)
