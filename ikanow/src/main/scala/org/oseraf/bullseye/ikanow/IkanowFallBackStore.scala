@@ -3,13 +3,15 @@ package org.oseraf.bullseye.ikanow
 import java.util.UUID
 
 import com.thinkaurelius.titan.core.{TitanGraph, TitanTransaction}
+import com.tinkerpop.blueprints.Graph
+import com.tinkerpop.blueprints.impls.tg.TinkerGraph
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.slf4j.Logging
 import org.apache.commons.codec.digest.DigestUtils
 import org.oseraf.bullseye.service.DataService._
 import org.oseraf.bullseye.store.AttributeContainer.{KEY, VALUE}
 import org.oseraf.bullseye.store._
-import org.oseraf.bullseye.store.impl.blueprints.{BlueprintsGraphStore, IndexedBlueprintsGraphStore}
+import org.oseraf.bullseye.store.impl.blueprints.{BlueprintsRelationship, BlueprintsGraphStore, IndexedBlueprintsGraphStore}
 
 class IkanowFallBackStore
   extends BullseyeEntityStore
@@ -34,7 +36,44 @@ class IkanowFallBackStore
         ikanowConf.getString("communities").split(",")
       )
     val graph = GraphLoader.createGraph(conf.getConfig("graph"))
-    blueprintsGraphStore = new IndexedBlueprintsGraphStore(graph) with WriteEventPublisherPlugin
+    blueprintsGraphStore = new WrapperStore(new TinkerGraph, "CAM:") {
+      override val innerStore = new IndexedBlueprintsGraphStore(graph, conf.hasPath("doBF"))
+    }
+  }
+
+  class WrapperStore(g:Graph, schemaName:String) extends IndexedBlueprintsGraphStore(g) with WriteEventPublisherPlugin {
+    val innerStore:IndexedBlueprintsGraphStore with NeighborhoodPlugin = null
+
+    override def addEntity(id:EntityStore.ID, entity:Entity) = {
+      innerStore.addEntity(id, new Entity {
+        override var attributes = Map("entity_type" -> isDoc(entity).toString)
+      })
+      entity.attributes.foreach(attr => {
+        innerStore.addEntityIfNecessary(attr._1 + attr._2, new Entity {
+          override var attributes = Map("attribute_type" -> attr._1, "attribute_value" -> attr._2)
+        })
+        innerStore.addRelationship(id + attr._1 + attr._2, new Relationship {override def connecting(): Iterable[EntityStore.ID] = Seq(id, attr._1+attr._2)
+          override var attributes: Map[KEY, VALUE] = Map("type" -> "entity_attribute")
+        })
+      })
+      true
+    }
+    override def entity(id:EntityStore.ID) = toPropertyNode(id)
+
+    private def toPropertyNode(id:EntityStore.ID) = {  // idea is to have configurable transformations?
+    val ent = innerStore.entity(id)
+      innerStore.neighborhood(id)
+        .map(rid => innerStore.entity(innerStore.relationship(rid).to))
+          .filter(isAttribute)
+           .foreach(neighbor => {
+              val k = neighbor.attribute("attribute_type")
+              val v = neighbor.attribute("attribute_value")
+              ent.attributes ++ Map(k -> v)
+           })
+      ent
+    }
+    private def isAttribute(entity:Entity) = entity.attributes.contains("attribute_type")
+    private def isDoc(entity:Entity) = entity.attributes.contains("title")
   }
 
   val mergeIdentifier = new SimpleAddingMergerIdentifier {
@@ -97,7 +136,7 @@ class IkanowFallBackStore
       val ikValue = node.attribute(IkanowFallBackStore.IKANOW_VALUE_ATTR_KEY)
       val ikType = node.attribute(IkanowFallBackStore.IKANOW_TYPE_ATTR_KEY)
       logger.trace(s"Looking up neighborhood of $entityId as $ikValue  --  $ikType")
-      val docs = ikanowRetriever.getNeighborhoodDocuments(ikValue, ikType)
+      val docs = ikanowRetriever. getNeighborhoodDocuments(ikValue, ikType)
       logger.trace(s"Found ${docs.size} docs")
       docs.foreach(doc => {
         val docEntId = IkanowFallBackStore.ikanowDocumentId(doc._id)
