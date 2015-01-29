@@ -10,8 +10,9 @@ import com.typesafe.scalalogging.slf4j.Logging
 import org.apache.commons.codec.digest.DigestUtils
 import org.oseraf.bullseye.service.DataService._
 import org.oseraf.bullseye.store.AttributeContainer.{KEY, VALUE}
+import org.oseraf.bullseye.store.EntityStore.ID
 import org.oseraf.bullseye.store._
-import org.oseraf.bullseye.store.impl.blueprints.{BlueprintsRelationship, BlueprintsGraphStore, IndexedBlueprintsGraphStore}
+import org.oseraf.bullseye.store.impl.blueprints.{BlueprintsEntity, BlueprintsRelationship, BlueprintsGraphStore, IndexedBlueprintsGraphStore}
 
 class IkanowFallBackStore
   extends BullseyeEntityStore
@@ -61,16 +62,17 @@ class IkanowFallBackStore
     override def entity(id:EntityStore.ID) = toPropertyNode(id)
 
     private def toPropertyNode(id:EntityStore.ID) = {  // idea is to have configurable transformations?
-    val ent = innerStore.entity(id)
-      innerStore.neighborhood(id)
-        .map(rid => innerStore.entity(innerStore.relationship(rid).to))
-          .filter(isAttribute)
-           .foreach(neighbor => {
+      new BlueprintsEntity(innerStore.graph.getVertex(id)) {
+        override var attributes =
+          innerStore.neighborhood(id)
+            .map(rid => innerStore.entity(innerStore.relationship(rid).to))
+             .filter(isAttribute)
+              .map(neighbor=> {
               val k = neighbor.attribute("attribute_type")
               val v = neighbor.attribute("attribute_value")
-              ent.attributes ++ Map(k -> v)
-           })
-      ent
+              (k, v)
+            }).toMap
+      }
     }
     private def isAttribute(entity:Entity) = entity.attributes.contains("attribute_type")
     private def isDoc(entity:Entity) = entity.attributes.contains("title")
