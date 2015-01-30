@@ -70,5 +70,5 @@ trait IndexedBlueprintsFuzzyVertexSearchPlugin extends AttributeBasedNaivelyFuzz
 }
 
 object AttributeBasedSearch {
-  final val FAKE_ID_ATTRIBUTE_KEY = "OSERAF:search/id"
+  final val FAKE_ID_ATTRIBUTE_KEY = "ID"
 }

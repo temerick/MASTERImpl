@@ -3,7 +3,7 @@ package org.oseraf.bullseye.ikanow
 import java.util.UUID
 
 import com.thinkaurelius.titan.core.{TitanGraph, TitanTransaction}
-import com.tinkerpop.blueprints.Graph
+import com.tinkerpop.blueprints.{Vertex, Graph}
 import com.tinkerpop.blueprints.impls.tg.TinkerGraph
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.slf4j.Logging
@@ -37,43 +37,61 @@ class IkanowFallBackStore
         ikanowConf.getString("communities").split(",")
       )
     val graph = GraphLoader.createGraph(conf.getConfig("graph"))
-    blueprintsGraphStore = new WrapperStore(new TinkerGraph, "CAM:") {
+    blueprintsGraphStore = new WrapperStore(new TinkerGraph) {
       override val innerStore = new IndexedBlueprintsGraphStore(graph, conf.hasPath("doBF"))
     }
   }
 
-  class WrapperStore(g:Graph, schemaName:String) extends IndexedBlueprintsGraphStore(g) with WriteEventPublisherPlugin {
-    val innerStore:IndexedBlueprintsGraphStore with NeighborhoodPlugin = null
+  class WrapperStore(g:Graph) extends IndexedBlueprintsGraphStore(g) with WriteEventPublisherPlugin {
+    val innerStore:IndexedBlueprintsGraphStore = null
 
     override def addEntity(id:EntityStore.ID, entity:Entity) = {
       innerStore.addEntity(id, new Entity {
-        override var attributes = Map("entity_type" -> isDoc(entity).toString)
+        override var attributes = Map("entity_type" -> (isDoc(entity) match {
+          case true => "Ikanow:Document"
+          case false => "Ikanow:Entity"
+        }))
       })
       entity.attributes.foreach(attr => {
         innerStore.addEntityIfNecessary(attr._1 + attr._2, new Entity {
           override var attributes = Map("attribute_type" -> attr._1, "attribute_value" -> attr._2)
         })
-        innerStore.addRelationship(id + attr._1 + attr._2, new Relationship {override def connecting(): Iterable[EntityStore.ID] = Seq(id, attr._1+attr._2)
-          override var attributes: Map[KEY, VALUE] = Map("type" -> "entity_attribute")
+        innerStore.addRelationship(id + attr._1 + attr._2, new Relationship {
+          override def connecting(): Iterable[EntityStore.ID] = Seq(id, attr._1+attr._2)
+          override var attributes: Map[KEY, VALUE] = Map("type" -> "entity_to_attribute")
         })
       })
       true
     }
-    override def entity(id:EntityStore.ID) = toPropertyNode(id)
 
-    private def toPropertyNode(id:EntityStore.ID) = {  // idea is to have configurable transformations?
-      new BlueprintsEntity(innerStore.graph.getVertex(id)) {
-        override var attributes =
-          innerStore.neighborhood(id)
-            .map(rid => innerStore.entity(innerStore.relationship(rid).to))
-             .filter(isAttribute)
-              .map(neighbor=> {
+    override def addRelationship(id:EntityStore.ID, rel:Relationship) = {
+      innerStore.addRelationship(id, new Relationship {
+        override def connecting(): Iterable[ID] = rel.connecting
+        override var attributes: Map[KEY, VALUE] = Map("type" -> "entity_to_entity", "EdgeLabel" -> rel.attribute("OSERAF:ikanow/type"))
+      })
+      true
+    }
+
+    override def entity(id:EntityStore.ID): Entity = toPropertyNode(id)
+    private def toPropertyNode(id:EntityStore.ID): Entity = {  // idea is to have configurable transformations?
+      val ent = innerStore.entity(id)
+      ent.attributes =
+        innerStore.neighborhood(id)
+          .map(rid => innerStore.entity(innerStore.relationship(rid).to))
+           .filter(isAttribute)
+            .map(neighbor=> {
               val k = neighbor.attribute("attribute_type")
               val v = neighbor.attribute("attribute_value")
               (k, v)
             }).toMap
+      val requestId = id
+      new IdentifiedEntity {
+        override val id = requestId
+        override var attributes = ent.attributes
       }
     }
+
+    override def neighborhood(id:EntityStore.ID) = innerStore.neighborhood(id).filterNot(nId => relationship(nId).attributes("type") == "entity_to_attribute")
     private def isAttribute(entity:Entity) = entity.attributes.contains("attribute_type")
     private def isDoc(entity:Entity) = entity.attributes.contains("title")
   }
@@ -151,14 +169,13 @@ class IkanowFallBackStore
             addEntIfNecessary(ikEnt)
             val relId = UUID.randomUUID().toString
             logger.trace(s"Adding edge $relId connecting $docEntId to ${ikEnt.eId}")
-            blueprintsGraphStore.addRelationship(
-              relId,
+            blueprintsGraphStore.addRelationship(relId,
               new Relationship {
                 override def connecting(): Iterable[EntityStore.ID] = {
                   Seq(docEntId, ikEnt.eId)
                 }
                 override var attributes: Map[KEY, VALUE] =
-                  Map("OSERAF:ikanow/edgeType" -> "mentions")
+                  Map("type" -> "entity_to_entity")
               }
             )
           })
@@ -203,7 +220,7 @@ class IkanowFallBackStore
   override def spliceStore = this
 }
 
-object IkanowFallBackStore {
+object IkanowFallBackStore extends IkanowFallBackStore{
 
   final val IKANOW_VALUE_ATTR_KEY = "Name"
   final val IKANOW_VALUE_ATTR_NAME = "Name"
@@ -237,6 +254,8 @@ object IkanowFallBackStore {
   def randomMasterEntityId(): EntityStore.ID =
     MASTER_KEY + ":" + UUID.randomUUID().toString
 
-  def isIkanowEntity(entityId: EntityStore.ID): Boolean =
-    entityId.startsWith(IKANOW_KEY + ":" + IKANOW_ENTITY_TYPE + ":")
+  def isIkanowEntity(entityId: EntityStore.ID): Boolean = {
+    blueprintsGraphStore.entity(entityId).attributes("entity_type").contains("Ikanow")
+  }
+
 }

@@ -46,7 +46,7 @@ class BlueprintsGraphStore(val graph: Graph)
 {
   override val store = this
 
-  override def entity(id: EntityStore.ID) =
+  override def entity(id: EntityStore.ID): Entity =
     new BlueprintsEntity(graph.getVertex(id))
 
   override def relationship(id: EntityStore.ID) =
