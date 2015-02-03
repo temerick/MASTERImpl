@@ -24,7 +24,7 @@ class IkanowFallBackStore
     with SplicePlugin
     with Logging
 {
-  var blueprintsGraphStore: BlueprintsGraphStore with WriteEventPublisherPlugin = null
+  var blueprintsGraphStore: WrapperTrait with WriteEventPublisherPlugin = null
   var ikanowRetriever: IkanowRetriever = null
 
   def setup(conf: Config) {
@@ -37,13 +37,14 @@ class IkanowFallBackStore
         ikanowConf.getString("communities").split(",")
       )
     val graph = GraphLoader.createGraph(conf.getConfig("graph"))
-    blueprintsGraphStore = new WrapperStore(new TinkerGraph) {
+    blueprintsGraphStore = new WrapperTrait with WriteEventPublisherPlugin {
       override val innerStore = new IndexedBlueprintsGraphStore(graph, conf.hasPath("doBF"))
     }
   }
-
-  class WrapperStore(g:Graph) extends IndexedBlueprintsGraphStore(g) with WriteEventPublisherPlugin {
-    val innerStore:IndexedBlueprintsGraphStore = null
+  
+  trait WrapperTrait extends EntityStore with BruteForceAttributeBasedNaivelyFuzzySearchPlugin with NeighborhoodPlugin with EntityIterationPlugin with RelationshipIterationPlugin {
+    def innerStore: IndexedBlueprintsGraphStore
+    override val store = this
 
     override def addEntity(id:EntityStore.ID, entity:Entity) = {
       innerStore.addEntity(id, new Entity {
@@ -67,10 +68,14 @@ class IkanowFallBackStore
     override def addRelationship(id:EntityStore.ID, rel:Relationship) = {
       innerStore.addRelationship(id, new Relationship {
         override def connecting(): Iterable[ID] = rel.connecting
-        override var attributes: Map[KEY, VALUE] = Map("type" -> "entity_to_entity", "EdgeLabel" -> rel.attribute("OSERAF:ikanow/type"))
+        override var attributes: Map[KEY, VALUE] = Map("type" -> "entity_to_entity") /*"Edge_Label" -> rel.attributes("OSERAF:ikanow/type"))*/
       })
       true
     }
+    //override def search(key: AttributeContainer.KEY, value: AttributeContainer.VALUE): Iterable[(EntityStore.ID, Double)] = {
+      //val mappedKey = mapSearchKey(key)
+      //innerStore.search(mappedKey, value).filterNot(es => isAttribute(innerStore.entity(es._1)))
+    //}
 
     override def entity(id:EntityStore.ID): Entity = toPropertyNode(id)
     private def toPropertyNode(id:EntityStore.ID): Entity = {  // idea is to have configurable transformations?
@@ -94,6 +99,17 @@ class IkanowFallBackStore
     override def neighborhood(id:EntityStore.ID) = innerStore.neighborhood(id).filterNot(nId => relationship(nId).attributes("type") == "entity_to_attribute")
     private def isAttribute(entity:Entity) = entity.attributes.contains("attribute_type")
     private def isDoc(entity:Entity) = entity.attributes.contains("title")
+
+    override def entityExists(id: EntityStore.ID) = innerStore.entityExists(id)
+    override def relationshipExists(id: EntityStore.ID) = innerStore.relationshipExists(id)
+    override def relationship(id: EntityStore.ID) = innerStore.relationship(id)
+    override def removeEntity(id: EntityStore.ID) = innerStore.removeEntity(id)
+    override def removeRelationship(id: EntityStore.ID) = innerStore.removeRelationship(id)
+    override def updateEntity(id: EntityStore.ID, entity: Entity) = innerStore.updateEntity(id, entity)
+    override def updateRelationship(id: EntityStore.ID, relationship: Relationship) = innerStore.updateRelationship(id, relationship)
+
+    override def entities = innerStore.entities.filterNot(eid => isAttribute(innerStore.entity(eid)))
+    override def relationships = innerStore.relationships
   }
 
   val mergeIdentifier = new SimpleAddingMergerIdentifier {
@@ -109,17 +125,17 @@ class IkanowFallBackStore
     if (fallbackSearchAttributes.contains(key)) {
       logger.debug("Querying ikanow for entity suggestions for " + value)
       val ikanowEntities = ikanowRetriever.getEntities(value)
-      var transaction: TitanTransaction = null
-      if (blueprintsGraphStore.graph.isInstanceOf[TitanGraph]) {
-        transaction = blueprintsGraphStore.graph.asInstanceOf[TitanGraph].newTransaction()
-      }
+      //var transaction: TitanTransaction = null
+      //if (blueprintsGraphStore.graph.isInstanceOf[TitanGraph]) {
+        //transaction = blueprintsGraphStore.graph.asInstanceOf[TitanGraph].newTransaction()
+      //}
       logger.trace("Found " + ikanowEntities.size)
       for (ent <- ikanowEntities) {
         addEntIfNecessary(ent)
       }
-      if (transaction != null) {
-        transaction.commit()
-      }
+      //if (transaction != null) {
+        //transaction.commit()
+      //}
     }
     logger.debug(s"Querying blueprints for $key = $value")
     blueprintsGraphStore.search(key, value)
@@ -150,13 +166,13 @@ class IkanowFallBackStore
   }
 
   override def neighborhood(entityId: EntityStore.ID) = {
-    if (IkanowFallBackStore.isIkanowEntity(entityId)) {
+    if (isIkanowEntity(entityId)) {
       logger.debug(s"Calculating neighborhood of Ikanow entity $entityId")
       val node = entity(entityId)
       val ikValue = node.attribute(IkanowFallBackStore.IKANOW_VALUE_ATTR_KEY)
       val ikType = node.attribute(IkanowFallBackStore.IKANOW_TYPE_ATTR_KEY)
       logger.trace(s"Looking up neighborhood of $entityId as $ikValue  --  $ikType")
-      val docs = ikanowRetriever. getNeighborhoodDocuments(ikValue, ikType)
+      val docs = ikanowRetriever.getNeighborhoodDocuments(ikValue, ikType)
       logger.trace(s"Found ${docs.size} docs")
       docs.foreach(doc => {
         val docEntId = IkanowFallBackStore.ikanowDocumentId(doc._id)
@@ -175,7 +191,7 @@ class IkanowFallBackStore
                   Seq(docEntId, ikEnt.eId)
                 }
                 override var attributes: Map[KEY, VALUE] =
-                  Map("type" -> "entity_to_entity")
+                  Map("OSERAF:ikanow/type" -> "mentions")
               }
             )
           })
@@ -215,12 +231,14 @@ class IkanowFallBackStore
     })
     super.splice(fromPortion, toPortion)
   }
-
+  def isIkanowEntity(entityId: EntityStore.ID): Boolean = {
+    blueprintsGraphStore.entity(entityId).attributes.getOrElse("MASTER:source", "").contains("ikanow")
+  }
   override def resolutionStore = blueprintsGraphStore
   override def spliceStore = this
 }
 
-object IkanowFallBackStore extends IkanowFallBackStore{
+object IkanowFallBackStore {
 
   final val IKANOW_VALUE_ATTR_KEY = "Name"
   final val IKANOW_VALUE_ATTR_NAME = "Name"
@@ -254,8 +272,6 @@ object IkanowFallBackStore extends IkanowFallBackStore{
   def randomMasterEntityId(): EntityStore.ID =
     MASTER_KEY + ":" + UUID.randomUUID().toString
 
-  def isIkanowEntity(entityId: EntityStore.ID): Boolean = {
-    blueprintsGraphStore.entity(entityId).attributes("entity_type").contains("Ikanow")
-  }
+
 
 }

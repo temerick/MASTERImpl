@@ -58,10 +58,12 @@ class BlueprintsGraphStore(val graph: Graph)
     true
   }
 
-  def addEntityIfNecessary(id:EntityStore.ID, entity:Entity) = {
+  def addEntityIfNecessary(id:EntityStore.ID, entity:Entity):Boolean = {
     if(!store.entityExists(id)) {
       store.addEntity(id, entity)
+      return true
     }
+    return false
   }
   override def addRelationship(id: EntityStore.ID, relationship: Relationship) = {
     relationship.connecting().toList match {
@@ -157,6 +159,6 @@ class BlueprintsRelationship(edge: Edge)
     true
 }
 
-class IndexedBlueprintsGraphStore(g:Graph, doBf: Boolean = false) extends BlueprintsGraphStore(g) with IndexedBlueprintsFuzzyVertexSearchPlugin {
+class IndexedBlueprintsGraphStore(g:Graph, doBf: Boolean = false) extends BlueprintsGraphStore(g) with IndexedBlueprintsFuzzyVertexSearchPlugin with WriteEventPublisherPlugin{
   override val doBF = doBf
 }
