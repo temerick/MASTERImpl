@@ -35,7 +35,7 @@ class DukeResolver(
     })
     db.commit()
     db
-  }
+  }                                                                                                                                                                      
   logger.info(s"Done indexing initial graph data, $indexCount resolvable nodes")
 
   // how do we handle updates and deletions?
@@ -62,6 +62,7 @@ class DukeResolver(
   val dukeProcessor = new Processor(dukeConf)
 
   def deduplicate(): Seq[BullsEyeDedupeCandidate] = {
+    var cnt = -1
     store
       .entities
       .flatMap(entityId => {
@@ -72,13 +73,13 @@ class DukeResolver(
               dupe.score
             )
           )
-    }).toSet.toSeq
+    }).toSet.seq.toSeq
   }
 
   def resolve(targetEntityId: String, limit: Option[Int] = None): Seq[BullsEyeEntityScore] = {
     val targetRecord = new EntityRecord(targetEntityId, store.entity(targetEntityId))
     val candidates = innerDB.findCandidateMatches(targetRecord)
-    logger.debug("Resolving targetRecord " + targetEntityId + " among " + candidates.size() + " candidates")
+    logger.trace("Resolving targetRecord " + targetEntityId + " among " + candidates.size() + " candidates")
     candidates.flatMap(candidate => compare(targetRecord, candidate)).toSeq
   }
 
@@ -87,7 +88,7 @@ class DukeResolver(
       None
     } else {
       val score = dukeProcessor.compare(targetRecord, candidateRecord)
-      logger.trace("Got comparison score " + score + " for " + candidateRecord.getValue(DukeResolver.ID_ATTRIBUTE))
+      //logger.trace("Got comparison score " + score + " for " + candidateRecord.getValue(DukeResolver.ID_ATTRIBUTE))
       if (score >= dukeConf.getThreshold) {
         Some(BullsEyeEntityScore(toBullsEyeEntity(candidateRecord), score))
       } else {

@@ -22,8 +22,7 @@ class IkanowFallBackStore
     with RelationshipIterationPlugin
     with NeighborhoodPlugin
     with SplicePlugin
-    with Logging
-{
+    with Logging {
   var blueprintsGraphStore: WrapperTrait with WriteEventPublisherPlugin = null
   var ikanowRetriever: IkanowRetriever = null
 
@@ -240,14 +239,14 @@ class IkanowFallBackStore
 
 object IkanowFallBackStore {
 
-  final val IKANOW_VALUE_ATTR_KEY = "Name"
-  final val IKANOW_VALUE_ATTR_NAME = "Name"
+  final val IKANOW_VALUE_ATTR_KEY = "name"
+  final val IKANOW_VALUE_ATTR_NAME = "name"
 
-  final val IKANOW_TYPE_ATTR_KEY = "Type"
-  final val IKANOW_TYPE_ATTR_NAME = "Type"
+  final val IKANOW_TYPE_ATTR_KEY = "type"
+  final val IKANOW_TYPE_ATTR_NAME = "type"
 
-  final val IKANOW_DIMENSION_ATTR_KEY = "Dimension"
-  final val IKANOW_DIMENSION_ATTR_NAME = "Dimension"
+  final val IKANOW_DIMENSION_ATTR_KEY = "dimension"
+  final val IKANOW_DIMENSION_ATTR_NAME = "dimension"
   
   final val MASTER_ENTITY_SOURCE_ATTR_KEY = "MASTER:source" // either of the following
   final val IKANOW_KEY = "ikanow"
