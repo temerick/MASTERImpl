@@ -105,7 +105,7 @@ class DukeResolver(
         case prop: Property => left.getValues(prop.getName).toSet.intersect(right.getValues(prop.getName).toSet).nonEmpty
       }
 
-  private def toBullsEyeEntity(record: Record): BullsEyeEntity = {
+  def toBullsEyeEntity(record: Record): BullsEyeEntity = {
     val entityId = record.getValue(DukeResolver.ID_ATTRIBUTE)
     new EntityRecord(entityId, store.entity(entityId)).toBullsEyeEntity
   }
