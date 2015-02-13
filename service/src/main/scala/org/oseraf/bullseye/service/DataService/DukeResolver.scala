@@ -12,11 +12,11 @@ import scala.collection.JavaConversions._
 import scala.util.{Failure, Success, Try}
 
 
-class DukeResolver(
-                    store: EntityStore with EntityIterationPlugin with WriteEventPublisherPlugin,
-                    dukeConf: Configuration
+class DukeResolver (
+                    val store: EntityStore with EntityIterationPlugin with WriteEventPublisherPlugin,
+                    val dukeConf: Configuration
                     )
-  extends Service with Logging with WriteEventListener
+  extends Service with Logging with WriteEventListener with Resolver
 {
 
   val keeperProps = dukeConf.getProperties.map(_.getName)
@@ -61,12 +61,12 @@ class DukeResolver(
   //   (link from dataset of size 1, with simple comparison))
   val dukeProcessor = new Processor(dukeConf)
 
-  def deduplicate(): Seq[BullsEyeDedupeCandidate] = {
+  override def deduplicate(): Seq[BullsEyeDedupeCandidate] = {
     var cnt = -1
     store
       .entities
       .flatMap(entityId => {
-        resolve(entityId)
+        resolve(entityId, Option((x:Double) => x >= dukeConf.getMaybeThreshold))
           .map(dupe =>
             BullsEyeDedupeCandidate(
               Seq(toBullsEyeEntity(new EntityRecord(entityId, store.entity(entityId))), dupe.entity).toSet,
@@ -76,26 +76,37 @@ class DukeResolver(
     }).toSet.seq.toSeq
   }
 
-  def resolve(targetEntityId: String, limit: Option[Int] = None): Seq[BullsEyeEntityScore] = {
+  def resolve(targetEntityId: EntityStore.ID, filterOrAll: Option[Double => Boolean]=None):Seq[BullsEyeEntityScore] = {
     val targetRecord = new EntityRecord(targetEntityId, store.entity(targetEntityId))
     val candidates = innerDB.findCandidateMatches(targetRecord)
     logger.trace("Resolving targetRecord " + targetEntityId + " among " + candidates.size() + " candidates")
-    candidates.flatMap(candidate => compare(targetRecord, candidate)).toSeq
+    candidates.flatMap(candidate =>
+      filterOrAll match {
+        case Some(predicate) => compare(targetRecord, candidate, predicate)
+        case None => compare(targetRecord, candidate)
+      }).toSeq
   }
 
-  private def compare(targetRecord: EntityRecord, candidateRecord: Record): Option[BullsEyeEntityScore] = {
+  def compare(targetRecord: EntityRecord, candidateRecord: Record, predicate:Double => Boolean = (x:Double) => true): Option[BullsEyeEntityScore] = {
     if (areEquivalent(targetRecord, candidateRecord)) {
       None
     } else {
       val score = dukeProcessor.compare(targetRecord, candidateRecord)
-      //logger.trace("Got comparison score " + score + " for " + candidateRecord.getValue(DukeResolver.ID_ATTRIBUTE))
-      if (score >= dukeConf.getThreshold) {
-        Some(BullsEyeEntityScore(toBullsEyeEntity(candidateRecord), score))
-      } else {
-        None
+      predicate(score) match {
+        case true => Some(BullsEyeEntityScore(toBullsEyeEntity(candidateRecord), score))
+        case false => None
       }
     }
   }
+      //logger.trace("Got comparison score " + score + " for " + candidateRecord.getValue(DukeResolver.ID_ATTRIBUTE))
+//      if (score >= dukeConf.getThreshold) {
+//        Some(BullsEyeEntityScore(toBullsEyeEntity(candidateRecord), score))
+//      } else {
+//        None
+//      }
+//    }
+//  }
+
 
   // Processor.isSameAs, but that's private
   private def areEquivalent(left: Record, right: Record): Boolean =

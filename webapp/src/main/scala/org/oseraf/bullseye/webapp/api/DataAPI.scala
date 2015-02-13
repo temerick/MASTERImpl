@@ -1,12 +1,17 @@
 package org.oseraf.bullseye.webapp.api
 
 import com.typesafe.scalalogging.slf4j.Logging
-import org.oseraf.bullseye.service.DataService.{BullsEyeEntity, DataService, PrincipalAwareDataService}
+import org.oseraf.bullseye.service.DataService.{ScoreEvaluator, BullsEyeEntity, DataService, PrincipalAwareDataService}
 import org.json4s.JsonAST.{JArray, JObject, JString}
 import java.security.Principal
 
 trait DataAPI extends API with DataService with PrincipalAwareDataService with Logging {
 
+  get("/scores") {
+    val principal = request.getUserPrincipal
+    logUser(principal, "scores")
+    evaluate()
+  }
   get("/resolve") {
     val principal = request.getUserPrincipal
     logUser(principal, "resolve")

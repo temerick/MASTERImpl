@@ -14,11 +14,10 @@ trait BullseyeEntityStore
      with NeighborhoodPlugin
      with AttributeBasedSearchAvailableOptionsPlugin
      with AttributeBasedNaivelyFuzzySearchPlugin
-     with EntityIterationPlugin
 {
   def setup(conf: Config)
   def spliceStore: EntityStore with SplicePlugin
-  def resolutionStore: EntityStore with EntityIterationPlugin with WriteEventPublisherPlugin
+  def resolutionStore: EntityStore with EntityIterationPlugin with WriteEventPublisherPlugin with NeighborhoodPlugin
   def mergeIdentifier: SimpleAddingMergerIdentifier
   def splitIdentifier: SimpleAddingSplitterIdentifier
 }
