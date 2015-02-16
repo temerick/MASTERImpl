@@ -12,6 +12,12 @@ trait DataAPI extends API with DataService with PrincipalAwareDataService with L
     logUser(principal, "scores")
     evaluate()
   }
+
+  get("/threshold") {
+    val principal = request.getUserPrincipal
+    logUser(principal, "scores")
+    numberVsThreshold()
+  }
   get("/resolve") {
     val principal = request.getUserPrincipal
     logUser(principal, "resolve")

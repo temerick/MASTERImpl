@@ -18,7 +18,7 @@ case class ScoredBullsEyeGraph(nodes: Seq[BullsEyeEntityScore], edges: Seq[Bulls
 case class BullsEyeSearchType(id: String, name: String)
 case class BullsEyeDedupeCandidate(entities: Iterable[BullsEyeEntity], score: Double)
 
-trait DataService extends Service with ScoreEvaluator {
+trait DataService extends Service {
 
   val entityStore: BullseyeEntityStore = {
     val classLoader = this.getClass.getClassLoader
@@ -37,9 +37,16 @@ trait DataService extends Service with ScoreEvaluator {
   val splitter = new SimpleAddingSplitter { override val store = entityStore.spliceStore }
   val resolverConf: Configuration = ConfigLoader.load(conf.getConfig("duke").getString("confPath"))
   val resolver = new GraphContextResolver {
-    override val duke: DukeResolver = new DukeResolver(resolutionStore, resolverConf)
+    override val duke:DukeResolver = new DukeResolver(resolutionStore, resolverConf)
     override val store = resolutionStore
   }
+  val se = new ScoreEvaluator {
+    override val gresolver:Resolver = resolver
+    override val dukeConf = resolverConf
+  }
+
+  def evaluate() = se.evaluate()
+  def numberVsThreshold() = se.numberVsThreshold()
 
   def resolve(targetEntityId: EntityStore.ID, limit:Option[Int] = None) : Seq[BullsEyeEntityScore] =
     resolver.resolve(targetEntityId)

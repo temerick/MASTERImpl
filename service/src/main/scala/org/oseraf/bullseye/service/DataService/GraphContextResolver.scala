@@ -1,6 +1,7 @@
 package org.oseraf.bullseye.service.DataService
 
 import com.typesafe.scalalogging.slf4j.Logging
+import no.priv.garshol.duke.Configuration
 import org.oseraf.bullseye.service.Service
 import org.oseraf.bullseye.store._
 import scala.collection.mutable
@@ -64,7 +65,7 @@ trait GraphContextResolver extends Service with Resolver {
     var cnt = -1
       store.entities
       .flatMap(entityId => {
-      resolve(entityId, Option((x:Double) => x >= duke.dukeConf.getThreshold))
+        resolve(entityId, Option((x:Double) => x >= duke.dukeConf.getThreshold))
         .map(dupe =>
           BullsEyeDedupeCandidate(
             Seq(toBullsEyeEntity(entityId), dupe.entity).toSet,
@@ -74,20 +75,27 @@ trait GraphContextResolver extends Service with Resolver {
     }).toSet.seq.toSeq
   }
 }
-trait evaluator
 
-trait ScoreEvaluator extends evaluator with Logging {
-  val resolver:Resolver
+trait ScoreEvaluator extends Logging {
+  val gresolver:Resolver
+  val dukeConf:Configuration
+
   def evaluate(step:Double=0.05):Seq[(Double, Seq[(Seq[EntityStore.ID], Double)])] = {
     var initThresh = 0.5
     for(i <- initThresh to 1 by step) yield {
-      logger.info(s"($i, $resolver.deduplicate())")
+      logger.info(s"($i, $gresolver.deduplicate())")
       (i,
-        resolver.deduplicate()
-        .map(bdc =>
-          (bdc.entities.toSeq.map(_.id), bdc.score))
+        {
+          dukeConf.setThreshold(i)
+          gresolver.deduplicate()
+        }
+          .map(bdc => (bdc.entities.toSeq.map(_.id), bdc.score))
         )
     }
+  }
+  def numberVsThreshold():Seq[(Double, Int)] = {
+    evaluate()
+      .map{case(thresh, candidates) => (thresh, candidates.length)}
   }
 }
 
