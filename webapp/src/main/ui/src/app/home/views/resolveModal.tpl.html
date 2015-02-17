@@ -2,7 +2,7 @@
     <div class="panel-heading">{{entity.entity.label}}</div>
     <div class="panel-body">
         <div class="resolution-item" ng-repeat="r in resolutions">
-            <label class="label label-default">{{r.entity.label}}</label>
+            <label class="label label-default">{{r.entity.label.substring(0,75)}}</label>
             <label class="label" ng-class="'label-' + getScoreClass(r.score)">{{round(r.score)}}</label>
             <button class="btn btn-sm btn-default" ng-click="toggleSelect(r)">{{getToggleClass(r) === 'success' ? 'Remove' : 'Add'}}</button>
             <label class="resolution-selection-icon label" ng-class="'label-' + getToggleClass(r)"><i class="fa" ng-class="getToggleIconClass(r)"></i></label>
