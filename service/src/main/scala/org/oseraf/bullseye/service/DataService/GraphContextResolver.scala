@@ -75,10 +75,15 @@ trait GraphContextResolver extends Service with Resolver {
     }).toSet.seq.toSeq
   }
 }
-
-trait ScoreEvaluator extends Logging {
-  val gresolver:Resolver
+trait Evaluator {
   val dukeConf:Configuration
+  def getDukeInfo = {
+
+  }
+}
+trait ScoreEvaluator extends Evaluator with Logging {
+  val gresolver:Resolver
+
 
   def evaluate(step:Double=0.05):Seq[(Double, Seq[(Seq[EntityStore.ID], Double)])] = {
     var initThresh = 0.5

@@ -40,7 +40,7 @@ trait DataService extends Service {
     override val duke:DukeResolver = new DukeResolver(resolutionStore, resolverConf)
     override val store = resolutionStore
   }
-  val se = new ScoreEvaluator {
+  val se = new Evaluator with ScoreEvaluator{
     override val gresolver:Resolver = resolver
     override val dukeConf = resolverConf
   }
