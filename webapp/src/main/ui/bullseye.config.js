@@ -4,7 +4,6 @@ module.exports = {
     
     // Where the project is build during development.
     buildDir: '../../../target/bullseye-webapp-0.0.1',
-
     // The location of the html page that will be built.
     // Change if needed...
     indexDest: 'WEB-INF/views/index.ssp',

@@ -78,7 +78,7 @@ trait GraphContextResolver extends Service with Resolver {
 trait Evaluator {
   val dukeConf:Configuration
   def getDukeInfo = {
-
+    dukeConf.getProperties
   }
 }
 trait ScoreEvaluator extends Evaluator with Logging {

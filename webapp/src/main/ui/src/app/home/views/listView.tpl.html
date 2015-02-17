@@ -1,6 +1,6 @@
 <div class="list-body">
     <div ng-repeat="d in data" class="list-item" ng-class="{selected: selection.indexOf(d) >= 0}" ng-click="select(d, $event)">
-        <label class="label label-default label-entity">{{d.entity.id}}</label>
+        <label class="label label-default label-entity">{{d.entity.label}}</label>
         <label class="label" ng-class="'label-' + getScoreClass(d.score)">{{round(d.score)}}</label>
         <button ng-click="remove()(d)" class="rem btn btn-xs btn-danger"><i class="fa fa-minus"></i></button>
         <button ng-click="splitItem()(d)" class="btn btn-xs btn-success"><i class="fa fa-unlink"></i>Split</button>
