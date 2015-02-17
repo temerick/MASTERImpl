@@ -4,7 +4,7 @@ import com.typesafe.scalalogging.slf4j.Logging
 import no.priv.garshol.duke.Configuration
 import org.oseraf.bullseye.service.Service
 import org.oseraf.bullseye.store._
-import scala.collection.mutable
+import scala.collection.JavaConversions._
 
 /**
  * Created by sstyer on 2/10/15.
@@ -77,17 +77,20 @@ trait GraphContextResolver extends Service with Resolver {
 }
 trait Evaluator {
   val dukeConf:Configuration
-  def getDukeInfo = {
-    dukeConf.getProperties
+  def getDukeInfo = Map("properties" -> dukeConf.getProperties, "threshold" -> dukeConf.getThreshold)
+  def getComparatorInfo = {
+    dukeConf.getProperties.toList.
+      map(prop => {
+      Map("name" -> prop.getName, "highProbability" -> prop.getHighProbability, "lowProbability" -> prop.getLowProbability,
+        "comparator" -> prop.getComparator.toString)
+    })
   }
 }
 trait ScoreEvaluator extends Evaluator with Logging {
   val gresolver:Resolver
 
-
-  def evaluate(step:Double=0.05):Seq[(Double, Seq[(Seq[EntityStore.ID], Double)])] = {
-    var initThresh = 0.5
-    for(i <- initThresh to 1 by step) yield {
+  def evaluate(start:Double=0.5, step:Double=0.05, end:Double=1):Seq[(Double, Seq[(Seq[EntityStore.ID], Double)])] = {
+    for(i <- start to end by step) yield {
       logger.info(s"($i, $gresolver.deduplicate())")
       (i,
         {
@@ -98,9 +101,14 @@ trait ScoreEvaluator extends Evaluator with Logging {
         )
     }
   }
+  def entityDiff(thresh1:Double, thresh2:Double) = {
+    val thresholdCandidates = evaluate(thresh1, thresh2-thresh1, thresh2).toMap
+    thresholdCandidates(thresh1).toSet diff thresholdCandidates(thresh2).toSet
+  }
   def numberVsThreshold():Seq[(Double, Int)] = {
     evaluate()
-      .map{case(thresh, candidates) => (thresh, candidates.length)}
+      .map{case(thresh, candidates) =>
+        (thresh, candidates.length)}
   }
 }
 
