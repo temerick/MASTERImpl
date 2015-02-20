@@ -73,9 +73,8 @@ trait GraphContextResolver extends Service with Resolver {
 }
 
 trait Evaluator {
-  val dukeConf:Configuration
-  def getDukeInfo = Map("properties" -> dukeConf.getProperties, "threshold" -> dukeConf.getThreshold)
-  def getComparators = dukeConf.getProperties.map(_.getComparator.toString)
+  //def getDukeInfo = Map("properties" -> dukeConf.getProperties, "threshold" -> dukeConf.getThreshold)
+  //def getComparators = dukeConf.getProperties.map(_.getComparator.toString)
 }
 
 trait ScoreEvaluator extends Evaluator with Logging {
@@ -110,7 +109,7 @@ trait ScoreEvaluator extends Evaluator with Logging {
         .map(i => {
           logger.info(s"($i, $resolver.deduplicate())")
             (i, {
-              dukeConf.setThreshold(i)
+              resolver.dukeConf.setThreshold(i)
               resolver.deduplicate(store)
                 .map(bdc => (bdc.entities.toSeq.map(_.id), bdc.score))
             })

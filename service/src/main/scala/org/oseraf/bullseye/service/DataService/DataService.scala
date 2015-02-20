@@ -44,14 +44,13 @@ trait DataService extends Service {
 //  val resolver = new DukeResolver(resolutionStore, resolverConf)
 
   val se = new Evaluator with ScoreEvaluator {
-    override val dukeConf = resolverConf
     override val store = resolutionStore
   }
 
-  def getComps = se.getComparators
+  def getComps = ???
   def getAttributes() = se.getAttributes
   def distinctValues(col:String) = se.distinctValues(col)
-  def getDukeInfo() = se.getDukeInfo
+  def getDukeInfo() = ???
   def getThresholdDuplicates() = se.getThresholdDuplicates(resolver.duke)
   def numberDupsVsThreshold() = se.numberDupsVsThreshold(resolver.duke)
   def degreeDistribution() = se.degreeDistribution()
