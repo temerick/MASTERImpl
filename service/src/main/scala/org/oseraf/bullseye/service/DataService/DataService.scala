@@ -5,7 +5,7 @@ import no.priv.garshol.duke._
 import org.oseraf.bullseye.service.Service
 import org.oseraf.bullseye.store.impl.blueprints.BlueprintsGraphStore
 import org.oseraf.bullseye.store._
-import com.typesafe.scalalogging.slf4j.Logging
+
 
 case class BullsEyeEntity(id: String, attrs: Map[String, String] = Map(), edges: Seq[BullsEyeEdge] = Seq()) extends Entity {
   var attributes = attrs
@@ -37,22 +37,30 @@ trait DataService extends Service {
   val splitter = new SimpleAddingSplitter { override val store = entityStore.spliceStore }
   val resolverConf: Configuration = ConfigLoader.load(conf.getConfig("duke").getString("confPath"))
   val resolver = new GraphContextResolver {
+    override val dukeConf = resolverConf
     override val duke:DukeResolver = new DukeResolver(resolutionStore, resolverConf)
     override val store = resolutionStore
   }
-  val se = new Evaluator with ScoreEvaluator{
-    override val gresolver:Resolver = resolver
+//  val resolver = new DukeResolver(resolutionStore, resolverConf)
+
+  val se = new Evaluator with ScoreEvaluator {
     override val dukeConf = resolverConf
+    override val store = resolutionStore
   }
 
-  def evaluate() = se.evaluate()
-  def numberVsThreshold() = se.numberVsThreshold()
+  def getComps = se.getComparators
+  def getAttributes() = se.getAttributes
+  def distinctValues(col:String) = se.distinctValues(col)
+  def getDukeInfo() = se.getDukeInfo
+  def getThresholdDuplicates() = se.getThresholdDuplicates(resolver.duke)
+  def numberDupsVsThreshold() = se.numberDupsVsThreshold(resolver.duke)
+  def degreeDistribution() = se.degreeDistribution()
 
   def resolve(targetEntityId: EntityStore.ID, limit:Option[Int] = None) : Seq[BullsEyeEntityScore] =
-    resolver.resolve(targetEntityId)
+    resolver.resolve(targetEntityId, Option((x:Double) => x >= resolverConf.getThreshold))
 
   def deduplicate(): Seq[BullsEyeDedupeCandidate] =
-    resolver.deduplicate()
+    resolver.deduplicate(resolutionStore)
 
   /**
    * Find entities most similar to the specified query

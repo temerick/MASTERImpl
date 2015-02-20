@@ -61,15 +61,15 @@ class DukeResolver (
   //   (link from dataset of size 1, with simple comparison))
   val dukeProcessor = new Processor(dukeConf)
 
-  override def deduplicate(): Seq[BullsEyeDedupeCandidate] = {
+  override def deduplicate(store:EntityIterationPlugin): Seq[BullsEyeDedupeCandidate] = {
     var cnt = -1
     store
       .entities
       .flatMap(entityId => {
-        resolve(entityId, Option((x:Double) => x >= dukeConf.getMaybeThreshold))
+        resolve(entityId, Option((x:Double) => x >= dukeConf.getThreshold))
           .map(dupe =>
             BullsEyeDedupeCandidate(
-              Seq(toBullsEyeEntity(new EntityRecord(entityId, store.entity(entityId))), dupe.entity).toSet,
+              Seq(toBullsEyeEntity(entityId, store), dupe.entity).toSet,
               dupe.score
             )
           )
@@ -93,7 +93,9 @@ class DukeResolver (
     } else {
       val score = dukeProcessor.compare(targetRecord, candidateRecord)
       predicate(score) match {
-        case true => Some(BullsEyeEntityScore(toBullsEyeEntity(candidateRecord), score))
+        case true => {
+          Some(BullsEyeEntityScore(toBullsEyeEntity(candidateRecord), score))
+        }
         case false => None
       }
     }
