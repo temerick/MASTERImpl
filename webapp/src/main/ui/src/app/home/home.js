@@ -20,13 +20,27 @@ angular.module('bullseye.home', [])
             neighborhood: {method: 'GET', isArray: false, url: 'rest/data/entity/:eId/neighborhood'}
         });
     }])
-    .controller('HomeController', ['$scope', '$modal', 'DataService', 'EntityOps', function($scope, $modal, DataService, EntityOps) {
+    .service('UtilService', function() {
+        var displayName = function(entity) {
+            return entity.attrs.displayName || entity.attrs.Name || entity.attrs.name || entity.attrs.actual_name ||
+                entity.attrs.url || entity.attrs.title || entity.id;
+        };
+        this.formatDisplayName = displayName;
+        this.addDisplayNameLabel = function(entity) {
+            entity.label = displayName(entity);
+            return entity;
+        };
+    })
+    .controller('HomeController', ['$scope', '$modal', 'DataService', 'EntityOps', 'UtilService', function($scope, $modal, DataService, EntityOps, UtilService) {
         var resolveModal,
         splitModal,
         deduplicateModal,
         mergeModal,
         resolveModalController = function ($scope, $modalInstance, resolutions, entity) {
-            $scope.resolutions = resolutions;
+            $scope.resolutions = _.map(resolutions, function(resource) {
+                                     resource.entity.label = UtilService.formatDisplayName(resource.entity);
+                                     return resource;
+                                 });
             $scope.entity = entity;
             $scope.selected = {
                 items: []
@@ -64,7 +78,10 @@ angular.module('bullseye.home', [])
             };
         },
         deduplicateModalController = function ($scope, $modalInstance, deduplications) {
-            $scope.deduplications = deduplications;
+            $scope.deduplications = _.map(deduplications, function(resource) {
+                _.each(resource.entities, UtilService.addDisplayNameLabel);
+                return resource;
+            });
             $scope.selected = {
                 items: []
             };
@@ -229,8 +246,9 @@ angular.module('bullseye.home', [])
         },
         splitModalController = function ($scope, $modalInstance, entity) {
             var s1 = 'split-' + new Date().getTime(),
-            s2 = 'split-' + new Date().getTime() + 1;
+                s2 = 'split-' + new Date().getTime() + 1;
             $scope.entity = entity;
+            $scope.entity.label = UtilService.formatDisplayName(entity.entity);
             $scope.splits = [
                 {
                     id: s1,
@@ -270,7 +288,11 @@ angular.module('bullseye.home', [])
                 }
             ];
             $scope.ok = function () {
-                $modalInstance.close($scope.splits);
+                var splits = $scope.splits;
+                _.each(splits, function(split) {
+                    split.label = UtilService.formatDisplayName(split);
+                });
+                $modalInstance.close(splits);
             };
             $scope.cancel = function () {
                 $modalInstance.dismiss();
@@ -467,7 +489,7 @@ angular.module('bullseye.home', [])
         $scope.showNeighborhood = DataService.showNeighborhood;
         $scope.removeItem = DataService.removeItem;
     }])
-    .factory('DataService', ['SearchTypes', 'EntityOps', function (SearchTypes, EntityOps) {
+    .factory('DataService', ['SearchTypes', 'EntityOps', 'UtilService', function (SearchTypes, EntityOps, UtilService) {
         var searchTypes = [],
         entityData = [],
         linkData = [];
@@ -477,6 +499,7 @@ angular.module('bullseye.home', [])
         return {
             showNeighborhood: function (entityScore) {
                 EntityOps.neighborhood({eId: entityScore.entity.id}).$promise.then(function (neighborhoodGraph) {
+                    neighborhoodGraph.nodes = _.map(neighborhoodGraph.nodes, UtilService.addDisplayNameLabel);
                     var newHashedEntityData = {};
                     neighborhoodGraph.nodes.forEach(function (node) {
                         return newHashedEntityData[node.id] = {entity: node, score: 0};
@@ -518,7 +541,10 @@ angular.module('bullseye.home', [])
             search: function (query, searchType, cbEarly, cbLate) {
                 return EntityOps.search({query: query, searchTypeId: searchType.id}).$promise.then(function (graph) {
                     cbEarly && cbEarly();
-                    entityData = graph.nodes;
+                    entityData = graph.nodes.map(function (d) {
+                        d.entity.label = UtilService.formatDisplayName(d.entity);
+                        return d;
+                    });
                     linkData = graph.edges;
                     cbLate && cbLate();
                 });
@@ -534,7 +560,9 @@ angular.module('bullseye.home', [])
                 linkData = [];
             },
             split: function (id, splits) {
-                entityData = entityData.concat(splits.map(function (d) { return {entity: d, score: null}; }));
+                entityData = entityData.concat(splits.map(function (d) {
+                    return {entity: UtilService.addDisplayNameLabel(d), score: null};
+                }));
                 var curEnts = {};
                 _.forEach(entityData, function (node) {
                     curEnts[node.entity.id] = true;
@@ -548,7 +576,7 @@ angular.module('bullseye.home', [])
                 });
             },
             merge: function (mergedEntity) {
-                entityData.push({entity: mergedEntity, score: null});
+                entityData.push({entity: UtilService.addDisplayNameLabel(mergedEntity), score: null});
                 var curEnts = {};
                 _.forEach(entityData, function (node) {
                     curEnts[node.entity.id] = true;
@@ -577,7 +605,7 @@ angular.module('bullseye.home', [])
             }
         };
     }])
-    .directive('networkView', [function () {
+    .directive('networkView', ['UtilService', function (UtilService) {
         return {
             restrict: 'E',
             scope: {
@@ -615,7 +643,7 @@ angular.module('bullseye.home', [])
                         }
                         return {
                             id: node.id,
-                            label: node.attrs.Name || node.attrs.name || node.attrs.displayName || node.attrs.id
+                            label: UtilService.formatDisplayName(node)
                         };
                     });
                     var newEdgeData = _.map(data[1], function(edge) {
@@ -687,7 +715,7 @@ angular.module('bullseye.home', [])
                         return 'Selected Entity Details';
                     } 
                     else if (scope.data.length == 1) {
-                        return scope.data[0].id;
+                        return scope.data[0].entity.label;
                     }
                     else {
                         return 'Merge Selected Entities';
