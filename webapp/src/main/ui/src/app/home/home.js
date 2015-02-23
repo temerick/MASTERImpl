@@ -131,25 +131,25 @@ angular.module('bullseye.home', [])
             };
 
             entities.forEach(function (ent) {
-                 _.keys(ent.entity.attrs).forEach(function (attr) {
+                 _.keys(ent.attrs).forEach(function (attr) {
                     var containsKey = _.some($scope.conflictingAttrs, function(item) {
                                        return _.isEqual(item.key, attr);
                                    });
                     var containsVal = _.some($scope.conflictingAttrs, function(item) {
-                                          return _.isEqual(item.val, ent.entity.attrs[attr]);
+                                          return _.isEqual(item.val, ent.attrs[attr]);
                                       });
                     if(containsKey && !containsVal) {
-                        $scope.conflictingAttrs.push({key: attr, val: ent.entity.attrs[attr]});
+                        $scope.conflictingAttrs.push({key: attr, val: ent.attrs[attr]});
                     }
                     else if($scope.finalAttrs[attr]) {
-                        if($scope.finalAttrs[attr] != ent.entity.attrs[attr]) {
-                            $scope.conflictingAttrs.push({key: attr, val: ent.entity.attrs[attr]});
+                        if($scope.finalAttrs[attr] != ent.attrs[attr]) {
+                            $scope.conflictingAttrs.push({key: attr, val: ent.attrs[attr]});
                             $scope.conflictingAttrs.push({key: attr, val: $scope.finalAttrs[attr]});
                             delete $scope.finalAttrs[attr];
                         }
                     }
                     else {
-                        $scope.finalAttrs[attr] = ent.entity.attrs[attr];
+                        $scope.finalAttrs[attr] = ent.attrs[attr];
                     }
                 });                               
             });
@@ -179,12 +179,12 @@ angular.module('bullseye.home', [])
                 };
             };
 
-            $scope.finalIncomingEdges = _.flatten(entities.map(function(ent){return ent.entity.edges.filter(function(edge){
-                return ent.entity.id == edge.target;
+            $scope.finalIncomingEdges = _.flatten(entities.map(function(ent){return ent.edges.filter(function(edge){
+                return ent.id == edge.target;
             });}));
 
-            $scope.finalOutgoingEdges = _.flatten(entities.map(function(ent){return ent.entity.edges.filter(function(edge){
-                return ent.entity.id == edge.source;
+            $scope.finalOutgoingEdges = _.flatten(entities.map(function(ent){return ent.edges.filter(function(edge){
+                return ent.id == edge.source;
             });}));
 
 
@@ -323,6 +323,7 @@ angular.module('bullseye.home', [])
         $scope.data = {
             raw: [],
             selection: [],
+            richSelection: [],
             network: []
         };
         $scope.searchData = {
@@ -449,7 +450,7 @@ angular.module('bullseye.home', [])
             });
             mergeModal.result.then(function (ent) {
                 var ids = entities.map(function (ent) {
-                    return ent.entity.id;
+                    return ent.id;
                 });
                 
                 EntityOps.merge({eIds: ids, entity: ent}).$promise.then(function (mergedEntity) {
@@ -458,12 +459,10 @@ angular.module('bullseye.home', [])
             });
         };
         $scope.select = function (entityIds) {
-            _.each($scope.data.selection, function (d) { d.entity.group = 'unselected'; });
-            var entities = _.map(entityIds, function (entityId) {
-                return _.find($scope.data.network[0], { 'id': entityId });
+            $scope.data.selection = entityIds;
+            $scope.data.richSelection = _.map($scope.data.selection, function (eid) {
+                return _.find($scope.data.network[0], { 'id': eid });
             });
-            _.each(entities, function (ent) { ent.group = 'selected'; });
-            $scope.data.selection = _.map(entities, function (ent) { return { 'entity': ent }; });
         };
         $scope.showNeighborhood = DataService.showNeighborhood;
         $scope.removeItem = DataService.removeItem;
@@ -480,7 +479,7 @@ angular.module('bullseye.home', [])
                 EntityOps.neighborhood({eId: entityScore.entity.id}).$promise.then(function (neighborhoodGraph) {
                     var newHashedEntityData = {};
                     neighborhoodGraph.nodes.forEach(function (node) {
-                        return newHashedEntityData[node.id] = {entity: node, group: "unselected", score: 0};
+                        return newHashedEntityData[node.id] = {entity: node, score: 0};
                     });
                     entityData.forEach(function (ent) {
                         if(newHashedEntityData[ent.entity.id]) {
@@ -519,14 +518,14 @@ angular.module('bullseye.home', [])
             search: function (query, searchType, cbEarly, cbLate) {
                 return EntityOps.search({query: query, searchTypeId: searchType.id}).$promise.then(function (graph) {
                     cbEarly && cbEarly();
-                    entityData = graph.nodes.map(function (d) { d.group = 'unselected'; return d; });
+                    entityData = graph.nodes;
                     linkData = graph.edges;
                     cbLate && cbLate();
                 });
             },
             resolve: function (selection) { // TODO this method appears to be unused
                 EntityOps.resolve({eId: selection.entity.id}).$promise.then(function (res) {
-                    entityData = res.sort(function (a, b) { return b.score - a.score; }).map(function (d) { d.group = 'unselected'; return d; });
+                    entityData = res.sort(function (a, b) { return b.score - a.score; });
                     linkData = [];
                 });
             },
@@ -599,7 +598,13 @@ angular.module('bullseye.home', [])
                 viz = new vis.Network(el, { nodes: nodes, edges: edges });
                 viz.on('select', function (properties) {
                     scope.select()(properties.nodes);
-                    viz.selectEdges([]);
+                    try {
+                        scope.$root.$digest(); // sinner
+                    } catch (e) {
+                    }
+                });
+                scope.$watch('selection', function (entityIds) {
+                    viz.selectNodes(entityIds);
                 });
                 scope.$watch('data', function (data) {
                     var removeNodes = nodes.getIds();
@@ -610,8 +615,7 @@ angular.module('bullseye.home', [])
                         }
                         return {
                             id: node.id,
-                            label: node.attrs.Name || node.attrs.name || node.attrs.displayName || node.attrs.id,
-                            group: node.group || "unselected"
+                            label: node.attrs.Name || node.attrs.name || node.attrs.displayName || node.attrs.id
                         };
                     });
                     var newEdgeData = _.map(data[1], function(edge) {
@@ -635,6 +639,7 @@ angular.module('bullseye.home', [])
             scope: {
                 data: '=',
                 selection: '=',
+                select: '&select',
                 resolveItem: '&resolveitem',
                 splitItem: '&splititem',
                 showNeighborhood: '&showneighborhood',
@@ -642,20 +647,16 @@ angular.module('bullseye.home', [])
             },
             templateUrl: 'home/views/listView.tpl.html',
             link: function (scope, element, attrs) {
-                scope.select = function (d, event) {
-                    var idx = scope.selection.indexOf(d);
+                scope.handleClick = function (d, event) {
+                    var idx = scope.selection.indexOf(d.entity.id);
                     if (event.ctrlKey || event.metaKey) {
                         if (idx < 0) {
-                            d.entity.group = 'selected';
-                            scope.selection.push(d);
+                            scope.select()(scope.selection.concat([d.entity.id]));
                         } else {
-                            d.entity.group = 'unselected';
-                            scope.selection.splice(idx, 1);
+                            scope.select()(scope.selection.slice(0, idx).concat(scope.selection.slice(idx + 1)));
                         }
                     } else {
-                        scope.selection.forEach(function (d) { d.entity.group = 'unselected'; });
-                        d.entity.group = 'selected';
-                        scope.selection = [d];
+                        scope.select()([d.entity.id]);
                     }
                 };
                 scope.getScoreClass = function (score) {
@@ -686,7 +687,7 @@ angular.module('bullseye.home', [])
                         return 'Selected Entity Details';
                     } 
                     else if (scope.data.length == 1) {
-                        return scope.data[0].entity.id;
+                        return scope.data[0].id;
                     }
                     else {
                         return 'Merge Selected Entities';
