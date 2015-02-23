@@ -92,7 +92,7 @@ angular.module('bullseye.home', [])
                 var nodes = [];
                 $scope.selected.items.forEach(function(n) {
                     n.entities.forEach(function (e){
-                        nodes.push({entity: e, score: Math.round(100.0 * n.score)});
+                        nodes.push({entity: e, score: n.score});
                     });
                 });
                 $modalInstance.close(nodes);
