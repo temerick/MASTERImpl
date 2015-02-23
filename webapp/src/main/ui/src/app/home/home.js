@@ -457,6 +457,9 @@ angular.module('bullseye.home', [])
                 });
             });
         };
+        $scope.select = function (d) {
+            console.log(d);
+        };
         $scope.showNeighborhood = DataService.showNeighborhood;
         $scope.removeItem = DataService.removeItem;
     }])
@@ -575,7 +578,8 @@ angular.module('bullseye.home', [])
             restrict: 'E',
             scope: {
                 data: '=',
-                selection: '='
+                selection: '=',
+                select: '&select'
             },
             link: function (scope, element, attrs) {
                 var viz,
@@ -587,10 +591,11 @@ angular.module('bullseye.home', [])
                     .style('position', 'relative')
                     .style('height', '100%')
                     .node();
-                // it seems to be a little tricky to get node selection to cause the item to be selected in the listView
-                // while unfortunate, for now, let's just turn off selection of nodes.
-                // they still highlight when you select one in the listView.
-                viz = new vis.Network(el, { nodes: nodes, edges: edges, options: { selectable: false } });
+                viz = new vis.Network(el, { nodes: nodes, edges: edges });
+                viz.on('select', function (properties) {
+                    scope.select()(properties.nodes);
+                    viz.selectEdges([]);
+                });
                 scope.$watch('data', function (data) {
                     var removeNodes = nodes.getIds();
                     var newNodeData = _.map(data[0], function(node) {

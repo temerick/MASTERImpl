@@ -3,7 +3,7 @@
         <div ng-include="'masthead/masthead.tpl.html'"></div>
     </div>
     <div>
-        <network-view data="data.network" selection="data.selection"></network-view>
+        <network-view data="data.network" selection="data.selection" select="select"></network-view>
         <div ng-if="data.raw.length === 0" class="no-data alert alert-info">Please select a starting node. <i class="fa fa-chevron-up"></i></div>
     </div>
     <div class="list-content" ng-show="data.raw.length > 0">
