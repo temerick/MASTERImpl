@@ -457,8 +457,13 @@ angular.module('bullseye.home', [])
                 });
             });
         };
-        $scope.select = function (d) {
-            console.log(d);
+        $scope.select = function (entityIds) {
+            _.each($scope.data.selection, function (d) { d.entity.group = 'unselected'; });
+            var entities = _.map(entityIds, function (entityId) {
+                return _.find($scope.data.network[0], { 'id': entityId });
+            });
+            _.each(entities, function (ent) { ent.group = 'selected'; });
+            $scope.data.selection = _.map(entities, function (ent) { return { 'entity': ent }; });
         };
         $scope.showNeighborhood = DataService.showNeighborhood;
         $scope.removeItem = DataService.removeItem;
