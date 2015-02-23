@@ -51,15 +51,15 @@ trait DataService extends Service {
   def getAttributes() = se.getAttributes
   def distinctValues(col:String) = se.distinctValues(col)
   def getDukeInfo() = ???
-  def getThresholdDuplicates() = se.getThresholdDuplicates(resolver.duke)
-  def numberDupsVsThreshold() = se.numberDupsVsThreshold(resolver.duke)
   def degreeDistribution() = se.degreeDistribution()
+  def numberDupsVsThreshold() = se.numberDupsVsThreshold(resolver.duke)
+  def numberGraphDupsVsThreshold(thresh:Double) = se.numberDupsVsThreshold(resolver, thresh)
 
   def resolve(targetEntityId: EntityStore.ID, limit:Option[Int] = None) : Seq[BullsEyeEntityScore] =
-    resolver.resolve(targetEntityId, Option((x:Double) => x >= resolverConf.getThreshold))
+    resolver.resolve(targetEntityId, resolverConf.getThreshold)
 
   def deduplicate(): Seq[BullsEyeDedupeCandidate] =
-    resolver.deduplicate(resolutionStore)
+    resolver.deduplicate(resolutionStore, resolverConf.getThreshold)
 
   /**
    * Find entities most similar to the specified query

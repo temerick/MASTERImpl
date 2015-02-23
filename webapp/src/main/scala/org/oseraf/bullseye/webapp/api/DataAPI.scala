@@ -23,12 +23,6 @@ trait DataAPI extends API with DataService with PrincipalAwareDataService with L
     getDukeInfo
   }
 
-  get("/scores") {
-    val principal = request.getUserPrincipal
-    logUser(principal, "scores")
-    getThresholdDuplicates()
-  }
-
   get("/comps") {
     val principal = request.getUserPrincipal
     logUser(principal, "scores")
@@ -39,6 +33,13 @@ trait DataAPI extends API with DataService with PrincipalAwareDataService with L
     val principal = request.getUserPrincipal
     logUser(principal, "scores")
     degreeDistribution
+  }
+
+  get("/numberGraphDupsVsThreshold/:thresh") {
+    val principal = request.getUserPrincipal
+    logUser(principal, "scores")
+    val x = numberGraphDupsVsThreshold(params("thresh").toDouble)
+    x.map(p => (p._1.toString, p._2)).toMap
   }
 
   get("/numberDupsVsThreshold") {

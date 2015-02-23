@@ -7,6 +7,7 @@ import org.oseraf.bullseye.store.EntityStore.ID
 import org.oseraf.bullseye.store._
 import scala.collection.JavaConversions._
 import scala.collection.mutable
+import java.util.TreeMap
 
 /**
  * Created by sstyer on 2/10/15.
@@ -15,9 +16,9 @@ trait GraphContextResolver extends Service with Resolver {
   val duke:DukeResolver
   val store:EntityStore with NeighborhoodPlugin with EntityIterationPlugin
 
-  def getDukeCandidateNeighborhoods(entId:EntityStore.ID):Seq[((EntityStore.ID, Double), Set[EntityStore.ID])] = {
+  def getDukeCandidateNeighborhoods(entId:EntityStore.ID, dukeThresh:Double):Seq[((EntityStore.ID, Double), Set[EntityStore.ID])] = {
     val ent = store.entity(entId)
-    val dukeCandidates = duke.resolve(entId, Option((x:Double) => x >= duke.dukeConf.getMaybeThreshold))
+    val dukeCandidates = duke.resolve(entId, dukeThresh)
     dukeCandidates
       .map(dukeCandidate => {
         val docId = getDocId(dukeCandidate.entity.id)
@@ -32,43 +33,36 @@ trait GraphContextResolver extends Service with Resolver {
 
   def isDoc(entId:EntityStore.ID) = store.entity(entId).attributes.contains("title")
 
-  def getDocId(entId:EntityStore.ID):EntityStore.ID = Option(neighborhoodEntityIds(entId).filter(isDoc)) match {
-      case Some(List()) => entId
-      case Some(docIds) => docIds.head
-      case None => entId //shouldn't really happen
-  }
+  def getDocId(entId:EntityStore.ID):EntityStore.ID = neighborhoodEntityIds(entId).filter(isDoc).headOption.getOrElse(entId)
 
- override def resolve(entId:EntityStore.ID, filterOrAll:Option[Double => Boolean]=None):Seq[BullsEyeEntityScore] = {
+  override def resolve(entId:EntityStore.ID, dukeThresh:Double):Seq[BullsEyeEntityScore] = {
    val entNeighborhood = {
      val docId = getDocId(entId)
       (docId, neighborhoodEntityIds(docId).toSet)
     }
-    getDukeCandidateNeighborhoods(entId)
+    getDukeCandidateNeighborhoods(entId, dukeThresh)
       .flatMap{
         case(((dukeCandidate, dukeScore), comentions)) => {
-          filterOrAll match {
-            case Some(predicate) => {
-              compare(dukeScore, entNeighborhood, (dukeCandidate, comentions), predicate)
-            }
-            case None => {
-              compare(dukeScore, entNeighborhood, (dukeCandidate, comentions))
-            }
-          }
+          compare(dukeScore, entNeighborhood, (dukeCandidate, comentions), dukeThresh)
         }
     }
   }
 
-  def compare(candidateScore:Double, n1:(EntityStore.ID, Set[EntityStore.ID]), n2:(EntityStore.ID, Set[EntityStore.ID]),
-              predicate:Double => Boolean=(x:Double) => true):Option[BullsEyeEntityScore] = {
+  def compare(candidateScore:Double, n1:(EntityStore.ID, Set[EntityStore.ID]), n2:(EntityStore.ID, Set[EntityStore.ID]), dukeThresh:Double=0):Option[BullsEyeEntityScore] = {
     val updatedScore = probUpdate(candidateScore, neighborhoodContextScore(n1, n2))
-    predicate(updatedScore) match {
+//    logger.info("contextScore: " + neighborhoodContextScore(n1, n2))
+    updatedScore >= dukeThresh match {
       case true => Some(BullsEyeEntityScore(toBullsEyeEntity(n2._1, store), updatedScore))
       case false => None
     }
   }
 
-  def neighborhoodContextScore(n1:(EntityStore.ID, Set[EntityStore.ID]), n2:(EntityStore.ID, Set[EntityStore.ID])):Double = jaccardIndex(n1._2, n2._2)
-  def jaccardIndex(s1:Set[EntityStore.ID], s2:Set[EntityStore.ID]):Double = (s1 intersect s2).size / (s1 union s2).size
+  def neighborhoodContextScore(n1:(EntityStore.ID, Set[EntityStore.ID]), n2:(EntityStore.ID, Set[EntityStore.ID])):Double = {
+    jaccardIndex(
+      n1._2.map(entId => store.entity(entId).attributes("actual_name")),
+      n2._2.map(entId => store.entity(entId).attribute("actual_name")))
+  }
+  def jaccardIndex(s1:Set[EntityStore.ID], s2:Set[EntityStore.ID]):Double = (s1 intersect s2).size * 1.0 / (s1 union s2).size * 1.0
   def probUpdate(oldP:Double, newP:Double):Double = oldP + (1 - oldP)*newP
 }
 
@@ -104,65 +98,36 @@ trait ScoreEvaluator extends Evaluator with Logging {
     degreeCounts.toSeq.sortBy(_._1).toMap
   }
 
-  def getThresholdDuplicates(resolver:Resolver, start:Double=0.65, step:Double=0.05, end:Double=1):Seq[(Double, Seq[(Seq[EntityStore.ID], Double)])] = {
-      (for(i <- start to end by step) yield { i }).toSeq
-        .map(i => {
-          logger.info(s"($i, $resolver.deduplicate())")
-            (i, {
-              resolver.dukeConf.setThreshold(i)
-              resolver.deduplicate(store)
-                .map(bdc => (bdc.entities.toSeq.map(_.id), bdc.score))
-            })
-        }).seq
-  }
-
-  def numberDupsVsThreshold(resolver:Resolver):Map[Double, Int] =
-    getThresholdDuplicates(resolver)
-      .map{
-        case(thresh:Double, candidates:Seq[(Seq[EntityStore.ID], Double)]) =>
-          thresh -> candidates.size}.toMap
-
-  def getGraphThresholdDuplicates(resolver:GraphContextResolver, start:Double=0.65, step:Double=0.05, end:Double=1):Seq[(Double, Seq[(Double, Seq[(Seq[EntityStore.ID], Double)])])] = {
-    getThresholdDuplicates(resolver.duke, start, step, end)
-     .map{
-      case(thresh, candidates) =>
-        (thresh, {
-          getThresholdDuplicates(resolver, thresh)
-        })
-    }.seq
-  }
-
-  def graphNumberDupsVsThreshold(resolver:GraphContextResolver, store:EntityIterationPlugin):Map[(Double, Double), Int] = {
-    getGraphThresholdDuplicates(resolver)
-      .flatMap {
-      case (thresh1:Double, threshDups:Seq[(Double, Seq[(Seq[EntityStore.ID], Double)])]) => {
-        threshDups.map{
-          case(thresh2:Double, dups:Seq[(Seq[EntityStore.ID], Double)]) => {
-            (thresh1, thresh2) -> dups.size
-          }
-        }
+  def numberDupsVsThreshold(resolver:Resolver, thresh:Double=0, start:Int=65, step:Int=5, end:Int=100):Map[Int, Int] = {
+    var threshMap = new TreeMap[Int, Int]
+    var ents = new mutable.HashSet[EntityStore.ID]
+    for (i <- start to end by step) threshMap.put(i, 0)
+    resolver.deduplicate(store, thresh)
+      .foreach(bdc => {
+      val entId = bdc.entities.head.id
+      if(bdc.score >= 0.65 && !ents.contains(entId)) {
+        val k = ((bdc.score * 20).toInt / 20.0) * 100 toInt
+        val v = threshMap.get(k)
+        threshMap.put(k, v + 1)
+        ents += (bdc.entities.head.id)
       }
-    }.toMap
-  }
-
-  def entityDiff(resolver:Resolver, store:EntityIterationPlugin, thresh1:Double, thresh2:Double) = {
-    val thresholdCandidates = getThresholdDuplicates(resolver, thresh1, thresh2-thresh1, thresh2).toMap
-    thresholdCandidates(thresh1).toSet diff thresholdCandidates(thresh2).toSet
+    })
+    threshMap.toMap
   }
 }
 
 trait Resolver {
   val dukeConf:Configuration
-  def resolve(entId:EntityStore.ID, filters:Option[Double => Boolean]=None):Seq[BullsEyeEntityScore]
-  def toBullsEyeEntity(entId:EntityStore.ID, store:EntityIterationPlugin) = {
-    BullsEyeEntity(entId)
+  def resolve(entId:EntityStore.ID, thresh:Double):Seq[BullsEyeEntityScore]
+  def toBullsEyeEntity(entId:EntityStore.ID, store:EntityStore with EntityIterationPlugin) = {
+    UiConverter.EntityToBullsEyeEntity(entId, store.entity(entId))
   }
-  def deduplicate(store:EntityIterationPlugin): Seq[BullsEyeDedupeCandidate] = {
+  def deduplicate(store:EntityStore with EntityIterationPlugin, thresh:Double=0): Seq[BullsEyeDedupeCandidate] = {
     var cnt = -1
     store
       .entities
        .flatMap(entityId => {
-         resolve(entityId, Option((x:Double) => x >= dukeConf.getThreshold))
+         resolve(entityId, thresh)
           .map(dupe =>
             BullsEyeDedupeCandidate(
               Seq(toBullsEyeEntity(entityId, store), dupe.entity).toSet,
