@@ -715,7 +715,7 @@ angular.module('bullseye.home', [])
                         return 'Selected Entity Details';
                     } 
                     else if (scope.data.length == 1) {
-                        return scope.data[0].entity.label;
+                        return scope.data[0].label;
                     }
                     else {
                         return 'Merge Selected Entities';
