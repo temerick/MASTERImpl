@@ -114,6 +114,11 @@ trait ScoreEvaluator extends Evaluator with Logging {
     })
     threshMap.toMap
   }
+  def numberGraphDupsVsDukeThresholds(resolver:Resolver, start:Int=65, step:Int=5, end:Int=100):Map[Int, Map[Int, Int]] = {
+    (for(i <- start to end by step) yield i)
+      .par.map(i => (i,
+        numberDupsVsThreshold(resolver, i*1.0/100))).seq.toMap
+  }
 }
 
 trait Resolver {

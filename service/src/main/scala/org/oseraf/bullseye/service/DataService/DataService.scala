@@ -54,6 +54,7 @@ trait DataService extends Service {
   def degreeDistribution() = se.degreeDistribution()
   def numberDupsVsThreshold() = se.numberDupsVsThreshold(resolver.duke)
   def numberGraphDupsVsThreshold(thresh:Double) = se.numberDupsVsThreshold(resolver, thresh)
+  def numberGraphDupsVsDukeThresholds() = se.numberGraphDupsVsDukeThresholds(resolver)
 
   def resolve(targetEntityId: EntityStore.ID, limit:Option[Int] = None) : Seq[BullsEyeEntityScore] =
     resolver.resolve(targetEntityId, resolverConf.getThreshold)
