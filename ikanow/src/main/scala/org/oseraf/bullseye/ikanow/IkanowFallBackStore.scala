@@ -5,9 +5,12 @@ import java.util.UUID
 import org.oseraf.bullseye.service.DataService._
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.slf4j.Logging
+import org.apache.commons.codec.digest.DigestUtils
+import org.oseraf.bullseye.service.DataService._
 import org.oseraf.bullseye.store.AttributeContainer.{KEY, VALUE}
+import org.oseraf.bullseye.store.EntityStore.ID
 import org.oseraf.bullseye.store._
-import org.oseraf.bullseye.store.impl.blueprints.BlueprintsGraphStore
+import org.oseraf.bullseye.store.impl.blueprints.{BlueprintsEntity, BlueprintsRelationship, BlueprintsGraphStore, IndexedBlueprintsGraphStore}
 
 class IkanowFallBackStore
   extends BullseyeEntityStore
@@ -17,9 +20,8 @@ class IkanowFallBackStore
     with RelationshipIterationPlugin
     with NeighborhoodPlugin
     with SplicePlugin
-    with Logging
-{
-  var blueprintsGraphStore: BlueprintsGraphStore with WriteEventPublisherPlugin = null
+    with Logging {
+  var blueprintsGraphStore: WrapperTrait with WriteEventPublisherPlugin = null
   var ikanowRetriever: IkanowRetriever = null
 
   def setup(conf: Config) {
@@ -32,7 +34,79 @@ class IkanowFallBackStore
         ikanowConf.getString("communities").split(",")
       )
     val graph = GraphLoader.createGraph(conf.getConfig("graph"))
-    blueprintsGraphStore = new BlueprintsGraphStore(graph) with WriteEventPublisherPlugin
+    blueprintsGraphStore = new WrapperTrait with WriteEventPublisherPlugin {
+      override val innerStore = new IndexedBlueprintsGraphStore(graph, conf.hasPath("doBF"))
+    }
+  }
+  
+  trait WrapperTrait extends EntityStore with BruteForceAttributeBasedNaivelyFuzzySearchPlugin with NeighborhoodPlugin with EntityIterationPlugin with RelationshipIterationPlugin {
+    def innerStore: IndexedBlueprintsGraphStore
+    override val store = this
+
+    override def addEntity(id:EntityStore.ID, entity:Entity) = {
+      innerStore.addEntity(id, new Entity {
+        override var attributes = Map("entity_type" -> (isDoc(entity) match {
+          case true => "Ikanow:Document"
+          case false => "Ikanow:Entity"
+        }))
+      })
+      entity.attributes.foreach(attr => {
+        innerStore.addEntityIfNecessary(attr._1 + attr._2, new Entity {
+          override var attributes = Map("attribute_type" -> attr._1, "attribute_value" -> attr._2)
+        })
+        innerStore.addRelationship(id + attr._1 + attr._2, new Relationship {
+          override def connecting(): Iterable[EntityStore.ID] = Seq(id, attr._1+attr._2)
+          override var attributes: Map[KEY, VALUE] = Map("type" -> "entity_to_attribute")
+        })
+      })
+      true
+    }
+
+    override def addRelationship(id:EntityStore.ID, rel:Relationship) = {
+      innerStore.addRelationship(id, new Relationship {
+        override def connecting(): Iterable[ID] = rel.connecting
+        override var attributes: Map[KEY, VALUE] = Map("type" -> "entity_to_entity") /*"Edge_Label" -> rel.attributes("OSERAF:ikanow/type"))*/
+      })
+      true
+    }
+    //override def search(key: AttributeContainer.KEY, value: AttributeContainer.VALUE): Iterable[(EntityStore.ID, Double)] = {
+      //val mappedKey = mapSearchKey(key)
+      //innerStore.search(mappedKey, value).filterNot(es => isAttribute(innerStore.entity(es._1)))
+    //}
+
+    override def entity(id:EntityStore.ID): Entity = toPropertyNode(id)
+    private def toPropertyNode(id:EntityStore.ID): Entity = {  // idea is to have configurable transformations?
+      val ent = innerStore.entity(id)
+      ent.attributes =
+        innerStore.neighborhood(id)
+          .map(rid => innerStore.entity(innerStore.relationship(rid).to))
+           .filter(isAttribute)
+            .map(neighbor=> {
+              val k = neighbor.attribute("attribute_type")
+              val v = neighbor.attribute("attribute_value")
+              (k, v)
+            }).toMap
+      val requestId = id
+      new IdentifiedEntity {
+        override val id = requestId
+        override var attributes = ent.attributes
+      }
+    }
+
+    override def neighborhood(id:EntityStore.ID) = innerStore.neighborhood(id).filterNot(nId => relationship(nId).attributes("type") == "entity_to_attribute")
+    private def isAttribute(entity:Entity) = entity.attributes.contains("attribute_type")
+    private def isDoc(entity:Entity) = entity.attributes.contains("title")
+
+    override def entityExists(id: EntityStore.ID) = innerStore.entityExists(id)
+    override def relationshipExists(id: EntityStore.ID) = innerStore.relationshipExists(id)
+    override def relationship(id: EntityStore.ID) = innerStore.relationship(id)
+    override def removeEntity(id: EntityStore.ID) = innerStore.removeEntity(id)
+    override def removeRelationship(id: EntityStore.ID) = innerStore.removeRelationship(id)
+    override def updateEntity(id: EntityStore.ID, entity: Entity) = innerStore.updateEntity(id, entity)
+    override def updateRelationship(id: EntityStore.ID, relationship: Relationship) = innerStore.updateRelationship(id, relationship)
+
+    override def entities = innerStore.entities.filterNot(eid => isAttribute(innerStore.entity(eid)))
+    override def relationships = innerStore.relationships
   }
 
   val mergeIdentifier = new SimpleAddingMergerIdentifier {
@@ -78,32 +152,37 @@ class IkanowFallBackStore
   }
 
   override def neighborhood(entityId: EntityStore.ID) = {
-    if (IkanowFallBackStore.isIkanowEntity(entityId)) {
-      val (ikValue, ikType) = IkanowFallBackStore.asIkanowId(entityId)
-      logger.info("Looking up neighborhood of " + entityId + " as " + ikValue + "  --  " + ikType)
-      ikanowRetriever.getNeighborhoodDocuments(ikValue, ikType)
-        .foreach(doc => {
-          val docEntId = IkanowFallBackStore.ikanowDocumentId(doc._id)
-          if (!blueprintsGraphStore.entityExists(docEntId)) {
-            blueprintsGraphStore.addEntity(docEntId, new Entity {
-              override var attributes = Map("Title" -> doc.title, "_id" -> doc._id, "Name" -> doc.title)
-            })
-            doc.entities.foreach(jsonEntity => {
-              val ikEnt = ikanowRetriever.makeIkanowEntity(jsonEntity)
-              addEntIfNecessary(ikEnt)
-              blueprintsGraphStore.addRelationship(
-                UUID.randomUUID().toString,
-                new Relationship {
-                  override def connecting(): Iterable[EntityStore.ID] = {
-                    Seq(docEntId, ikEnt.eId)
-                  }
-                  override var attributes: Map[KEY, VALUE] =
-                    Map("OSERAF:ikanow/edgeType" -> "mentions")
+    if (isIkanowEntity(entityId)) {
+      logger.debug(s"Calculating neighborhood of Ikanow entity $entityId")
+      val node = entity(entityId)
+      val ikValue = node.attribute(IkanowFallBackStore.IKANOW_VALUE_ATTR_KEY)
+      val ikType = node.attribute(IkanowFallBackStore.IKANOW_TYPE_ATTR_KEY)
+      logger.trace(s"Looking up neighborhood of $entityId as $ikValue  --  $ikType")
+      val docs = ikanowRetriever.getNeighborhoodDocuments(ikValue, ikType)
+      logger.trace(s"Found ${docs.size} docs")
+      docs.foreach(doc => {
+        val docEntId = IkanowFallBackStore.ikanowDocumentId(doc._id)
+        if (!blueprintsGraphStore.entityExists(docEntId)) {
+          blueprintsGraphStore.addEntity(docEntId, new Entity {
+            override var attributes = Map("Title" -> doc.title, "DocId" -> doc._id, "Name" -> doc.title)
+          })
+          doc.entities.foreach(jsonEntity => {
+            val ikEnt = ikanowRetriever.makeIkanowEntity(jsonEntity)
+            addEntIfNecessary(ikEnt)
+            val relId = UUID.randomUUID().toString
+            logger.trace(s"Adding edge $relId connecting $docEntId to ${ikEnt.eId}")
+            blueprintsGraphStore.addRelationship(relId,
+              new Relationship {
+                override def connecting(): Iterable[EntityStore.ID] = {
+                  Seq(docEntId, ikEnt.eId)
                 }
-              )
-            })
-          }
-        })
+                override var attributes: Map[KEY, VALUE] =
+                  Map("OSERAF:ikanow/type" -> "mentions")
+              }
+            )
+          })
+        }
+      })
     }
     blueprintsGraphStore.neighborhood(entityId)
   }
@@ -137,21 +216,23 @@ class IkanowFallBackStore
     })
     super.splice(fromPortion, toPortion)
   }
-
+  def isIkanowEntity(entityId: EntityStore.ID): Boolean = {
+    blueprintsGraphStore.entity(entityId).attributes.getOrElse("MASTER:source", "").contains("ikanow")
+  }
   override def resolutionStore = blueprintsGraphStore
   override def spliceStore = this
 }
 
 object IkanowFallBackStore {
 
-  final val IKANOW_VALUE_ATTR_KEY = "Name"
-  final val IKANOW_VALUE_ATTR_NAME = "Name"
+  final val IKANOW_VALUE_ATTR_KEY = "name"
+  final val IKANOW_VALUE_ATTR_NAME = "name"
 
-  final val IKANOW_TYPE_ATTR_KEY = "Type"
-  final val IKANOW_TYPE_ATTR_NAME = "Type"
+  final val IKANOW_TYPE_ATTR_KEY = "type"
+  final val IKANOW_TYPE_ATTR_NAME = "type"
 
-  final val IKANOW_DIMENSION_ATTR_KEY = "Dimension"
-  final val IKANOW_DIMENSION_ATTR_NAME = "Dimension"
+  final val IKANOW_DIMENSION_ATTR_KEY = "dimension"
+  final val IKANOW_DIMENSION_ATTR_NAME = "dimension"
   
   final val MASTER_ENTITY_SOURCE_ATTR_KEY = "MASTER:source" // either of the following
   final val IKANOW_KEY = "ikanow"
@@ -162,22 +243,17 @@ object IkanowFallBackStore {
   final val IKANOW_DOCUMENT_TYPE = "document"
 
   def ikanowEntityId(ikValue: String, ikType: String): EntityStore.ID =
-    IKANOW_KEY + ":" + IKANOW_ENTITY_TYPE + ":" + ikValue + "/" + ikType
+    IKANOW_KEY + ":" + IKANOW_ENTITY_TYPE + ":" + safeIkId(ikValue, ikType)
 
-  def getIkanowIdentifier(id: EntityStore.ID): String =
-    id.substring((IKANOW_KEY + ":" + IKANOW_ENTITY_TYPE + ":").size)
+  private def safeIkId(ikValue: String, ikType: String): String =
+    whiten(ikValue + "/" + ikType)
 
-  def asIkanowId(id: EntityStore.ID): (String, String) = {
-    val pieces = id.substring((IKANOW_KEY + ":" + IKANOW_ENTITY_TYPE + ":").size).split("/")
-    (pieces(0), pieces(1)) // almost certainly not quite right
-  }
+  private def whiten(str: String): String =
+    DigestUtils sha1Hex str
 
   def ikanowDocumentId(ikId: String): EntityStore.ID =
-    IKANOW_KEY + ":" + IKANOW_DOCUMENT_TYPE + ":" + ikId
+    IKANOW_KEY + ":" + IKANOW_DOCUMENT_TYPE + ":" + whiten(ikId)
 
   def randomMasterEntityId(): EntityStore.ID =
     MASTER_KEY + ":" + UUID.randomUUID().toString
-
-  def isIkanowEntity(entityId: EntityStore.ID): Boolean =
-    entityId.startsWith(IKANOW_KEY + ":" + IKANOW_ENTITY_TYPE + ":")
 }

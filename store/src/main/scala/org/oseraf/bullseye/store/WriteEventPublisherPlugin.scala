@@ -9,7 +9,7 @@ trait WriteEventPublisherPlugin extends EntityStore {
   var writeListeners = new mutable.ArrayBuffer[WriteEventListener]()
 
   abstract override def addEntity(id: EntityStore.ID, entity: Entity): Boolean =
-    returning(super.addEntity(id, entity)) { writeListeners.foreach(_.handleAddEntityEvent(id)) }
+    returning(super.addEntity(id, entity)) { writeListeners.foreach(_.handleAddEntityEvent(id, entity)) }
   abstract override def addRelationship(id: EntityStore.ID, relationship: Relationship): Boolean =
     returning(super.addRelationship(id, relationship)) { writeListeners.foreach(_.handleAddRelationshipEvent(id)) }
 
@@ -37,7 +37,7 @@ trait WriteEventPublisherPlugin extends EntityStore {
 }
 
 trait WriteEventListener {
-  def handleAddEntityEvent(id: EntityStore.ID)
+  def handleAddEntityEvent(id: EntityStore.ID, entity: Entity)
   def handleAddRelationshipEvent(id: EntityStore.ID)
 
   def handleRemoveEntityEvent(id: EntityStore.ID)

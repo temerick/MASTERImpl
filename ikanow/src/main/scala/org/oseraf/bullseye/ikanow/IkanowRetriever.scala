@@ -18,26 +18,13 @@ class IkanowRetriever(urlString:String, userName:String, password:String, commun
   extends Logging
 {   //this should be an object, but I want parameters -- FIX
 
-  def makeIkanowEntity(entityJson: Map[String, _]): IkanowEntity = {
+  def makeIkanowEntity(entityJson: Map[String, _]): IkanowEntity =
     IkanowEntity(
       IkanowFallBackStore.ikanowEntityId(entityJson("disambiguated_name").toString, entityJson("type").toString),
       Map(
         IkanowFallBackStore.IKANOW_VALUE_ATTR_KEY -> entityJson("disambiguated_name").toString,
         IkanowFallBackStore.IKANOW_TYPE_ATTR_KEY -> entityJson("type").toString,
         IkanowFallBackStore.IKANOW_DIMENSION_ATTR_KEY -> entityJson("dimension").toString,
-        IkanowFallBackStore.MASTER_ENTITY_SOURCE_ATTR_KEY -> IkanowFallBackStore.IKANOW_KEY,
-        IkanowFallBackStore.MASTER_ENTITY_IKANOW_TYPE_ATTR_KEY -> IkanowFallBackStore.IKANOW_ENTITY_TYPE
-      )
-    )
-  }
-
-  def makeIkanowEntity(entity:SearchSuggestPojo): IkanowEntity =
-    IkanowEntity(
-      IkanowFallBackStore.ikanowEntityId(entity.getValue, entity.getType),
-      Map(
-        IkanowFallBackStore.IKANOW_VALUE_ATTR_KEY -> entity.getValue,
-        IkanowFallBackStore.IKANOW_TYPE_ATTR_KEY -> entity.getType,
-        IkanowFallBackStore.IKANOW_DIMENSION_ATTR_KEY -> entity.getDimension,
         IkanowFallBackStore.MASTER_ENTITY_SOURCE_ATTR_KEY -> IkanowFallBackStore.IKANOW_KEY,
         IkanowFallBackStore.MASTER_ENTITY_IKANOW_TYPE_ATTR_KEY -> IkanowFallBackStore.IKANOW_ENTITY_TYPE
       )

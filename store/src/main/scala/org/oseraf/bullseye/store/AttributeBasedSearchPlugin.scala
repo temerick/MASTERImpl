@@ -1,5 +1,6 @@
 package org.oseraf.bullseye.store
 
+import com.typesafe.scalalogging.slf4j.Logging
 import org.oseraf.bullseye.store.impl.blueprints.BlueprintsGraphStore
 
 import scala.util.{Failure, Success, Try}
@@ -52,13 +53,22 @@ trait BruteForceAttributeBasedNaivelyFuzzySearchPlugin
     else entity.attribute(key, default)
 }
 
-trait IndexedBlueprintsFuzzyVertexSearchPlugin extends AttributeBasedNaivelyFuzzySearchPlugin with BruteForceAttributeBasedNaivelyFuzzySearchPlugin {
-  val store:BlueprintsGraphStore with EntityIterationPlugin
+trait IndexedBlueprintsFuzzyVertexSearchPlugin extends AttributeBasedNaivelyFuzzySearchPlugin with BruteForceAttributeBasedNaivelyFuzzySearchPlugin with Logging  {
+  val store:BlueprintsGraphStore
+  def doBF: Boolean = true
   override def search(key: AttributeContainer.KEY, value:AttributeContainer.VALUE):Iterable[(EntityStore.ID, Double)] = {
-    store.graph.query().has(key, CONTAINS, value).vertices().toList.map(v => (v.getId.toString, score(v.getProperty(key), value)))
+    logger.trace("Trying indexed search")
+    val verts = store.graph.query().has(key, CONTAINS, value).vertices().toList
+    if (verts.isEmpty) {
+      logger.trace("Falling back on brute force search")
+      super.search(key, value)
+    } else {
+      logger.trace(s"Found ${verts.size} answers, scoring")
+      verts.map(v => (v.getId.toString, score(v.getProperty(key), value)))
+    }
   }
 }
 
 object AttributeBasedSearch {
-  final val FAKE_ID_ATTRIBUTE_KEY = "OSERAF:search/id"
+  final val FAKE_ID_ATTRIBUTE_KEY = "ID"
 }
