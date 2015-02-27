@@ -2,7 +2,7 @@
     <h3>{{getHeader()}}</h3>
     <div class="no-data alert alert-info" ng-if="data.length === 0"><i class="fa fa-chevron-left">Select an entity to view details</i></div>
     <div ng-if="data.length == 1" class="details-inner">
-        <div class="details-inner-cnt single" ng-repeat="(key, value) in data[0].entity.attrs">
+        <div class="details-inner-cnt single" ng-repeat="(key, value) in data[0].attrs">
             <label class="label label-default label-key">{{key}}</label>:
             <label class="label label-default label-value">{{value}}</label>
         </div>

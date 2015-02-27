@@ -3,7 +3,7 @@
         <div ng-include="'masthead/masthead.tpl.html'"></div>
     </div>
     <div>
-        <network-view data="data.network" selection="data.selection"></network-view>
+        <network-view data="data.network" select="select" selection="data.selection"></network-view>
         <div ng-if="data.raw.length === 0" class="no-data alert alert-info">Please select a starting node. <i class="fa fa-chevron-up"></i></div>
     </div>
     <div class="list-content" ng-show="data.raw.length > 0">
@@ -11,7 +11,7 @@
             <h3>Results</h3>
             <div class="num-results"><span class="badge">{{data.raw.length}}</span></div>
         </div>
-        <list-view data="data.raw" selection="data.selection" resolveitem="resolveItem" splititem="splitItem" showneighborhood="showNeighborhood" remove="removeItem"></list-view>
-        <detail-view mergeitems="mergeItems" ng-show="data.raw" data="data.selection" ></detail-view>
+        <list-view data="data.raw" select="select" selection="data.selection" resolveitem="resolveItem" splititem="splitItem" showneighborhood="showNeighborhood" remove="removeItem"></list-view>
+        <detail-view mergeitems="mergeItems" ng-show="data.raw" data="data.richSelection" ></detail-view>
     </div>
 </div>
