@@ -2,7 +2,7 @@
     <div class="panel-heading">Candidate Duplicates</div>
     <div class="panel-body">
         <div class="deduplication-item" ng-repeat="dd in deduplications">
-            <label class="label label-default dedupe-label" ng-repeat="ent in dd.entities">{{ent.id}}</label>
+            <label class="label label-default dedupe-label" ng-repeat="ent in dd.entities">{{ent.label}}</label>
             <label class="label" ng-class="'label-' + getScoreClass(dd.score)">{{round(dd.score)}}</label>
             <button class="btn btn-sm btn-default" ng-click="toggleSelect(dd, $index)">{{getToggleClass(dd) === 'success' ? 'Remove' : 'Add'}}</button>
             <label class="deduplication-selection-icon label" ng-class="'label-' + getToggleClass(dd)"><i class="fa" ng-class="getToggleIconClass(dd)"></i></label>
