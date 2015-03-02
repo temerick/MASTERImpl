@@ -43,7 +43,7 @@ trait DataService extends Service {
   }
 //  val resolver = new DukeResolver(resolutionStore, resolverConf)
 
-  val se = new Evaluator with ScoreEvaluator {
+  val se = new ScoreEvaluator {
     override val store = resolutionStore
   }
 
@@ -52,14 +52,13 @@ trait DataService extends Service {
   def distinctValues(col:String) = se.distinctValues(col)
   def getDukeInfo() = ???
   def degreeDistribution() = se.degreeDistribution()
-  def numberDupsVsThreshold() = se.numberDupsVsThreshold(resolver.duke)
   def numberGraphDupsVsThreshold(thresh:Double) = se.numberDupsVsThreshold(resolver, thresh)
   def numberGraphDupsVsDukeThresholds() = se.numberGraphDupsVsDukeThresholds(resolver)
 
-  def resolve(targetEntityId: EntityStore.ID, limit:Option[Int] = None) : Seq[BullsEyeEntityScore] =
-    resolver.resolve(targetEntityId, resolverConf.getThreshold)
+  def resolve(targetEntityId: EntityStore.ID, limit:Option[Int] = None) : Seq[GraphBullsEyeEntityScore] =
+    resolver.resolve(targetEntityId, resolverConf.getMaybeThreshold, resolverConf.getThreshold)
 
-  def deduplicate(): Seq[BullsEyeDedupeCandidate] =
+  def deduplicate(): Seq[GraphBullsEyeDedupeCandidate] =
     resolver.deduplicate(resolutionStore, resolverConf.getThreshold)
 
   /**

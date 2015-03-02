@@ -11,13 +11,13 @@ trait PrincipalAwareDataService extends DataService {
     val scGraph = super.search(query, searchTypeId, limit)
     filterGraph(p, scGraph)
   }
-  def resolve(p:Principal, targetEntityId: EntityStore.ID, limit:Option[Int]) : Seq[BullsEyeEntityScore] = {
+  def resolve(p:Principal, targetEntityId: EntityStore.ID, limit:Option[Int]) = {
     getBullsEyeEntityDetails(p, targetEntityId) match {
       case Some(ent) => super.resolve(targetEntityId, limit).filter(scEnt => isOK(p, scEnt.entity))
       case _ => List()
     }
   }
-  def deduplicate(p:Principal):Seq[BullsEyeDedupeCandidate] = super.deduplicate.filter(cand => cand.entities.forall(ent => isOK(p, ent)))
+  def deduplicate(p:Principal) = super.deduplicate.filter(cand => cand.entities.forall(ent => isOK(p, ent)))
 
   def getNeighborhood(p:Principal, entityId: EntityStore.ID) : BullsEyeGraph = {
     getBullsEyeEntityDetails(p, entityId) match {

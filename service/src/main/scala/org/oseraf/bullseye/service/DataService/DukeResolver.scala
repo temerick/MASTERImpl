@@ -16,7 +16,7 @@ class DukeResolver (
                     val store: EntityStore with EntityIterationPlugin with WriteEventPublisherPlugin,
                     val dukeConf: Configuration
                     )
-  extends Logging with WriteEventListener with Resolver
+  extends Logging with WriteEventListener
 {
 
   val keeperProps = dukeConf.getProperties.map(_.getName)
@@ -61,7 +61,7 @@ class DukeResolver (
   //   (link from dataset of size 1, with simple comparison))
   val dukeProcessor = new Processor(dukeConf)
 
-  override def deduplicate(store:EntityStore with EntityIterationPlugin, thresh:Double): Seq[BullsEyeDedupeCandidate] = {
+  def deduplicate(store:EntityStore with EntityIterationPlugin, thresh:Double): Seq[BullsEyeDedupeCandidate] = {
     var cnt = -1
     store
       .entities
@@ -76,7 +76,7 @@ class DukeResolver (
     }).toSet.seq.toSeq
   }
 
-  override def resolve(targetEntityId: EntityStore.ID, thresh:Double=0):Seq[BullsEyeEntityScore] = {
+  def resolve(targetEntityId: EntityStore.ID, thresh:Double=0):Seq[BullsEyeEntityScore] = {
     val targetRecord = new EntityRecord(targetEntityId, store.entity(targetEntityId))
     val candidates = innerDB.findCandidateMatches(targetRecord)
     logger.trace("Resolving targetRecord " + targetEntityId + " among " + candidates.size() + " candidates")
@@ -107,7 +107,9 @@ class DukeResolver (
 //    }
 //  }
 
-
+  def toBullsEyeEntity(entId:EntityStore.ID, store:EntityStore with EntityIterationPlugin) = {
+    UiConverter.EntityToBullsEyeEntity(entId, store.entity(entId))
+  }
   // Processor.isSameAs, but that's private
   private def areEquivalent(left: Record, right: Record): Boolean =
     dukeConf

@@ -40,7 +40,7 @@ trait DataAPI extends API with DataService with PrincipalAwareDataService with L
     logUser(principal, "numberGraphDupsVsDukeThresholds")
     val x=  numberGraphDupsVsDukeThresholds
     x.map{
-      case(i:Int, tbl:Map[Int, Int]) =>
+      case(i, tbl) =>
         (i.toString, tbl.map(p => (p._1.toString, p._2)).toMap)
     }.toMap
   }
@@ -51,12 +51,13 @@ trait DataAPI extends API with DataService with PrincipalAwareDataService with L
     x.map(p => (p._1.toString, p._2)).toMap
   }
 
-    get("/numberDupsVsThreshold") {
-    val principal = request.getUserPrincipal
-    logUser(principal, "numberDupsVsThreshold")
-    val x = numberDupsVsThreshold()
-    x.map(p => (p._1.toString, p._2)).toMap
-  }
+//  get("/numberDupsVsThreshold") {
+//    val principal = request.getUserPrincipal
+//    logUser(principal, "numberDupsVsThreshold")
+//    val x = numberDupsVsThreshold()
+//    x.map(p => (p._1.toString, p._2)).toMap
+//  }
+
   get("/resolve") {
     val principal = request.getUserPrincipal
     logUser(principal, "resolve")
