@@ -1,39 +1,39 @@
 package org.oseraf.bullseye.webapp.api
 
 import com.typesafe.scalalogging.slf4j.Logging
-import org.oseraf.bullseye.service.DataService.{ScoreEvaluator, BullsEyeEntity, DataService, PrincipalAwareDataService}
+import org.oseraf.bullseye.service.DataService.{BullsEyeEntity, DataService, PrincipalAwareDataService}
 import org.json4s.JsonAST.{JArray, JObject, JString}
 import java.security.Principal
 
 trait DataAPI extends API with DataService with PrincipalAwareDataService with Logging {
 
-  get ("/distinctValues/:col") {
-    val principal = request.getUserPrincipal
-    logUser(principal, "distinctValues")
-    distinctValues(params("col"))
-  }
-  get ("/attributes") {
-    val principal = request.getUserPrincipal
-    logUser(principal, "attributes")
-    getAttributes
-  }
-  get ("/dukeInfo") {
-    val principal = request.getUserPrincipal
-    logUser(principal, "dukeInfo")
-    getDukeInfo
-  }
-
-  get("/comps") {
-    val principal = request.getUserPrincipal
-    logUser(principal, "comps")
-    getComps
-  }
-
-  get("/degreeDist") {
-    val principal = request.getUserPrincipal
-    logUser(principal, "degreeDist")
-    degreeDistribution
-  }
+//  get ("/distinctValues/:col") {
+//    val principal = request.getUserPrincipal
+//    logUser(principal, "distinctValues")
+//    distinctValues(params("col"))
+//  }
+//  get ("/attributes") {
+//    val principal = request.getUserPrincipal
+//    logUser(principal, "attributes")
+//    getAttributes
+//  }
+//  get ("/dukeInfo") {
+//    val principal = request.getUserPrincipal
+//    logUser(principal, "dukeInfo")
+//    getDukeInfo
+//  }
+//
+//  get("/comps") {
+//    val principal = request.getUserPrincipal
+//    logUser(principal, "comps")
+//    getComps
+//  }
+//
+//  get("/degreeDist") {
+//    val principal = request.getUserPrincipal
+//    logUser(principal, "degreeDist")
+//    degreeDistribution
+//  }
 
   get("/numberGraphDupsVsDukeThresholds") {
     val principal = request.getUserPrincipal
@@ -44,19 +44,13 @@ trait DataAPI extends API with DataService with PrincipalAwareDataService with L
         (i.toString, tbl.map(p => (p._1.toString, p._2)).toMap)
     }.toMap
   }
-  get("/numberGraphDupsVsThreshold/:thresh") {
+
+  get("/numberDupsVsThreshold") {
     val principal = request.getUserPrincipal
-    logUser(principal, "numberGraphDupsVsThreshold")
-    val x = numberGraphDupsVsThreshold(params("thresh").toDouble)
+    logUser(principal, "numberDupsVsThreshold")
+    val x = numberDupsVsThreshold()
     x.map(p => (p._1.toString, p._2)).toMap
   }
-
-//  get("/numberDupsVsThreshold") {
-//    val principal = request.getUserPrincipal
-//    logUser(principal, "numberDupsVsThreshold")
-//    val x = numberDupsVsThreshold()
-//    x.map(p => (p._1.toString, p._2)).toMap
-//  }
 
   get("/resolve") {
     val principal = request.getUserPrincipal
@@ -67,8 +61,14 @@ trait DataAPI extends API with DataService with PrincipalAwareDataService with L
   get("/deduplicate") {
     val principal = request.getUserPrincipal
     logUser(principal, "deduplicate")
-    deduplicate(principal)
+    deduplicate(.80, 0)
   }
+
+//  get("/graphDeduplicate") {
+//    val principal = request.getUserPrincipal
+//    logUser(principal, "graphDeduplicate")
+//    graphDeduplicate()
+//  }
 
   get("/search") {
     val principal = request.getUserPrincipal

@@ -17,7 +17,7 @@ trait PrincipalAwareDataService extends DataService {
       case _ => List()
     }
   }
-  def deduplicate(p:Principal) = super.deduplicate.filter(cand => cand.entities.forall(ent => isOK(p, ent)))
+  //def deduplicate(p:Principal) = super.deduplicate.filter(cand => cand.entities.forall(ent => isOK(p, ent)))
 
   def getNeighborhood(p:Principal, entityId: EntityStore.ID) : BullsEyeGraph = {
     getBullsEyeEntityDetails(p, entityId) match {

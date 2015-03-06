@@ -27,7 +27,7 @@ trait GraphContextResolver extends Service {
       .map(dukeCandidate => {
         val docId = getDocId(dukeCandidate.entity.id)
         ((dukeCandidate.entity.id, dukeCandidate.score), neighborhoodEntityIds(docId).toSet)
-    })
+      })
   }
   def neighborhoodEntityIds(entId:EntityStore.ID):Seq[EntityStore.ID] =
     store.neighborhood(entId).toSeq
@@ -39,7 +39,7 @@ trait GraphContextResolver extends Service {
 
   def getDocId(entId:EntityStore.ID):EntityStore.ID = neighborhoodEntityIds(entId).filter(isDoc).headOption.getOrElse(entId)
 
-  def resolve(entId:EntityStore.ID, dukeThresh:Double, graphThresh:Double):Seq[GraphBullsEyeEntityScore] = {
+  def resolve(entId:EntityStore.ID, dukeThresh:Double=0, graphThresh:Double=0):Seq[GraphBullsEyeEntityScore] = {
    val entNeighborhood = {
      val docId = getDocId(entId)
       (docId, neighborhoodEntityIds(docId).toSet)
@@ -79,52 +79,48 @@ trait GraphContextResolver extends Service {
   def neighborhoodContextScore(n1:(EntityStore.ID, Set[EntityStore.ID]), n2:(EntityStore.ID, Set[EntityStore.ID])):Double = {
     jaccardIndex(
       n1._2.map(entId => store.entity(entId).attributes("actual_name")),
-      n2._2.map(entId => store.entity(entId).attribute("actual_name")))
+      n2._2.map(entId => store.entity(entId).attributes("actual_name")))
   }
   def jaccardIndex(s1:Set[EntityStore.ID], s2:Set[EntityStore.ID]):Double = (s1 intersect s2).size * 1.0 / (s1 union s2).size * 1.0
   def probUpdate(oldP:Double, newP:Double):Double = oldP + (1 - oldP)*newP
-}
 
-trait ScoreEvaluator extends Logging {
-  val store:EntityStore with NeighborhoodPlugin with EntityIterationPlugin
+//---------------------------------------------------------------------------------------------------------------------------------------
+//  def getAttributes():Set[AttributeContainer.KEY] =
+//    store.entities
+//      .flatMap(eId =>
+//        store.entity(eId)
+//          .attributes.keys).toSet
+//
+//  def distinctValues(col:AttributeContainer.KEY):Set[AttributeContainer.VALUE] =
+//    store.entities
+//      .map(eId => store
+//       .entity(eId)
+//        .attribute(col)).toSet
+//
+//  def degreeDistribution():Map[Int,Int] = {
+//    var degreeCounts = new mutable.HashMap[Int, Int]
+//    for (eId <- store.entities) yield {
+//      val neighborhoodSize = store.neighborhood(eId).size
+//      degreeCounts.get(neighborhoodSize) match {
+//        case Some(int) => degreeCounts.put(neighborhoodSize, int + 1)
+//        case None =>  degreeCounts.put(neighborhoodSize, 1)
+//      }
+//    }
+//    degreeCounts.toSeq.sortBy(_._1).toMap
+//  }
 
-  def getAttributes():Set[AttributeContainer.KEY] =
-    store.entities
-      .flatMap(eId =>
-        store.entity(eId)
-          .attributes.keys).toSet
-
-  def distinctValues(col:AttributeContainer.KEY):Set[AttributeContainer.VALUE] =
-    store.entities
-      .map(eId => store
-       .entity(eId)
-        .attribute(col)).toSet
-
-  def degreeDistribution():Map[Int,Int] = {
-    var degreeCounts = new mutable.HashMap[Int, Int]
-    for (eId <- store.entities) yield {
-      val neighborhoodSize = store.neighborhood(eId).size
-      degreeCounts.get(neighborhoodSize) match {
-        case Some(int) => degreeCounts.put(neighborhoodSize, int + 1)
-        case None =>  degreeCounts.put(neighborhoodSize, 1)
-      }
-    }
-    degreeCounts.toSeq.sortBy(_._1).toMap
-  }
-
-  def numberDupsVsThreshold(resolver:GraphContextResolver, dukeThresh:Double=0, graphThresh:Double=0, step:Int=5, end:Int=100):Map[Int, Int] = {
-    var threshMap = new TreeMap[Int, Int]
+  def numberDupsVsThreshold(resolver:DukeResolver, dukeThresh:Double=0, start:Int=65, step:Int=5, end:Int=100):Map[Int, Int] = {
+    var threshMap = new mutable.HashMap[Int, Int]
     var ents = new mutable.HashSet[EntityStore.ID]
-    val ithresh = (((dukeThresh * 20).toInt / 20.0) * 100).toInt
-    for (i <- ithresh to end by step) threshMap.put(i, 0)
+    for (i <- start to end by step) threshMap.put(i, 0)
 
-    resolver.deduplicate(store, dukeThresh, graphThresh)
+    bullseyeDedupCandidates(resolver, 0)
       .foreach(bdc => {
         val entId = bdc.entities.head.id
-        if(!ents.contains(entId)) {
-          val k = (((bdc.score * 20).toInt / 20.0) * 100).toInt
-          val v = threshMap.get(k)
-          threshMap.put(k, v + 1)
+        val dukeScore = toQuintInt(bdc.score)
+        if(!ents.contains(entId) && dukeScore >= start) {
+          val v = threshMap(dukeScore)
+          threshMap.put(dukeScore, v + 1)
           ents += entId
         }
       })
@@ -143,12 +139,12 @@ trait ScoreEvaluator extends Logging {
       m.put(i, im)
     }
     var ents = new mutable.HashSet[EntityStore.ID]
-    resolver.deduplicate(store)
+    resolver.bullseyeGraphDedupCandidates(resolver, 0, 0)
       .foreach(gbdc => {
         val entId = gbdc.entities.head.id
         val dukeScore = toQuintInt(gbdc.score)
         val graphScore = toQuintInt(gbdc.graphScore)
-        if(!ents.contains(entId) && dukeScore >= 65 && graphScore >= 65) {
+        if(!ents.contains(entId) && dukeScore >= start && graphScore >= start) {
           val v = m(dukeScore)(graphScore)
           m(dukeScore)(graphScore) = v + 1
           ents += entId
@@ -156,6 +152,59 @@ trait ScoreEvaluator extends Logging {
       })
     m
   }
+
+  def resolutions(resolver:DukeResolver):Map[EntityStore.ID, Seq[BullsEyeEntityScore]] =
+    store.entities.map(tarEnt =>
+      tarEnt -> resolver.resolve(tarEnt)).toMap
+
+  def filteredResolutions(resolver:DukeResolver, compareScore:Double=0):Map[EntityStore.ID, Seq[BullsEyeEntityScore]] =
+    resolutions(resolver)
+      .map{case(tarEnt, dupCandidates) =>
+        tarEnt -> dupCandidates.filter(dc => dc.score >= compareScore)}
+
+  def filteredResolutionPairs(resolver:DukeResolver, compareScore:Double):Seq[(EntityStore.ID, BullsEyeEntityScore)] =
+    filteredResolutions(resolver, compareScore).toSeq
+      .flatMap{
+        case(tarEnt, dupCandidates) =>
+          dupCandidates.map(aDup => (tarEnt, aDup))}
+
+  def bullseyeDedupCandidates(resolver:DukeResolver, compareScore:Double=.80) =
+    filteredResolutionPairs(resolver, compareScore)
+      .map{
+      case(tarEntId, gbdc) =>
+        BullsEyeDedupeCandidate(
+          Seq(
+            toBullsEyeEntity(tarEntId, store),
+            toBullsEyeEntity(gbdc.entity.id, store)), gbdc.score)}
+
+
+
+
+
+  def resolutions(resolver:GraphContextResolver):Map[EntityStore.ID, Seq[GraphBullsEyeEntityScore]] =
+    store.entities.map(tarEnt =>
+      tarEnt -> resolver.resolve(tarEnt)).toMap
+
+  def filteredResolutions(resolver:GraphContextResolver, score:Double, scoreDiff:Double):Map[EntityStore.ID, Seq[GraphBullsEyeEntityScore]] =
+    resolutions(resolver)
+      .map{case(tarEnt, dupCandidates) =>
+        tarEnt -> dupCandidates.filter(gbdc =>
+          gbdc.score >= score && (gbdc.graphScore - gbdc.score) >= scoreDiff)}
+
+  def filteredResolutionPairs(resolver:GraphContextResolver, score:Double, scoreDiff:Double):Seq[(EntityStore.ID, GraphBullsEyeEntityScore)] =
+    filteredResolutions(resolver, score, scoreDiff).toSeq
+      .flatMap{
+        case(tarEnt, dupCandidates) =>
+          dupCandidates.map(aDup => (tarEnt, aDup))}
+
+  def bullseyeGraphDedupCandidates(resolver:GraphContextResolver, score:Double=.80, scoreDiff:Double=.05) =
+    filteredResolutionPairs(resolver, score, scoreDiff)
+      .map{
+        case(tarEntId, gbdc) =>
+          GraphBullsEyeDedupeCandidate(
+            Seq(
+              toBullsEyeEntity(tarEntId, store),
+              toBullsEyeEntity(gbdc.entity.id, store)), gbdc.score, gbdc.graphScore)}
 
 //  def getDistinctScores(resolver:Resolver, thresh:Double=0, limit:Option[Int]=None):Seq[Double] = {
 //    resolver.deduplicate(store, thresh).map{

@@ -61,7 +61,7 @@ class DukeResolver (
   //   (link from dataset of size 1, with simple comparison))
   val dukeProcessor = new Processor(dukeConf)
 
-  def deduplicate(store:EntityStore with EntityIterationPlugin, thresh:Double): Seq[BullsEyeDedupeCandidate] = {
+  def deduplicate(store:EntityStore with EntityIterationPlugin, thresh:Double=0): Seq[BullsEyeDedupeCandidate] = {
     var cnt = -1
     store
       .entities

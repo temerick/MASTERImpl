@@ -43,23 +43,26 @@ trait DataService extends Service {
   }
 //  val resolver = new DukeResolver(resolutionStore, resolverConf)
 
-  val se = new ScoreEvaluator {
-    override val store = resolutionStore
-  }
+//  val se = new ScoreEvaluator {
+//    override val store = resolutionStore
+//  }
 
-  def getComps = ???
-  def getAttributes() = se.getAttributes
-  def distinctValues(col:String) = se.distinctValues(col)
-  def getDukeInfo() = ???
-  def degreeDistribution() = se.degreeDistribution()
-  def numberGraphDupsVsThreshold(thresh:Double) = se.numberDupsVsThreshold(resolver, thresh)
-  def numberGraphDupsVsDukeThresholds() = se.numberGraphDupsVsDukeThresholds(resolver)
+//  def getComps = ???
+//  def getAttributes() = se.getAttributes
+//  def distinctValues(col:String) = se.distinctValues(col)
+//  def getDukeInfo() = ???
+//  def degreeDistribution() = se.degreeDistribution()
+  def numberDupsVsThreshold() = resolver.numberDupsVsThreshold(resolver.duke)
+  def numberGraphDupsVsDukeThresholds() = resolver.numberGraphDupsVsDukeThresholds(resolver)
 
   def resolve(targetEntityId: EntityStore.ID, limit:Option[Int] = None) : Seq[GraphBullsEyeEntityScore] =
     resolver.resolve(targetEntityId, resolverConf.getMaybeThreshold, resolverConf.getThreshold)
 
-  def deduplicate(): Seq[GraphBullsEyeDedupeCandidate] =
-    resolver.deduplicate(resolutionStore, resolverConf.getThreshold)
+  def deduplicate(dukeScoreThresh:Double=.80, scoreDiffThresh:Double=.05): Seq[GraphBullsEyeDedupeCandidate] =
+    resolver.bullseyeGraphDedupCandidates(resolver, dukeScoreThresh, scoreDiffThresh) //resolver.duke.deduplicate(resolutionStore)
+
+//  def graphDeduplicate(): Seq[GraphBullsEyeDedupeCandidate] =
+//    resolver.bullseyeGraphDedupCandidates(resolver, .80, 0)
 
   /**
    * Find entities most similar to the specified query
