@@ -5,8 +5,8 @@ import java.util
 import com.typesafe.scalalogging.slf4j.Logging
 import no.priv.garshol.duke._
 import no.priv.garshol.duke.databases.LuceneDatabase
-import org.oseraf.bullseye.service.Service
 import org.oseraf.bullseye.store._
+import scala.collection.mutable
 
 import scala.collection.JavaConversions._
 import scala.util.{Failure, Success, Try}
@@ -16,7 +16,7 @@ class DukeResolver (
                     val store: EntityStore with EntityIterationPlugin with WriteEventPublisherPlugin,
                     val dukeConf: Configuration
                     )
-  extends Logging with WriteEventListener
+  extends Logging with WriteEventListener with Resolver
 {
 
   val keeperProps = dukeConf.getProperties.map(_.getName)
@@ -61,27 +61,43 @@ class DukeResolver (
   //   (link from dataset of size 1, with simple comparison))
   val dukeProcessor = new Processor(dukeConf)
 
-  def deduplicate(store:EntityStore with EntityIterationPlugin, thresh:Double=0): Seq[BullsEyeDedupeCandidate] = {
-    var cnt = -1
-    store
-      .entities
-      .flatMap(entityId => {
-        resolve(entityId, thresh)
-          .map(dupe =>
-            BullsEyeDedupeCandidate(
-              Seq(toBullsEyeEntity(entityId, store), dupe.entity).toSet,
-              dupe.score
-            )
-          )
-    }).toSet.seq.toSeq
-  }
+  def resolutions():Map[EntityStore.ID, Seq[BullsEyeEntityScore]] =
+    store.entities.map(tarEnt =>
+      tarEnt -> resolve(tarEnt)).toMap
 
-  def resolve(targetEntityId: EntityStore.ID, thresh:Double=0):Seq[BullsEyeEntityScore] = {
+  def resolutionPairs():Seq[(EntityStore.ID, BullsEyeEntityScore)] =
+    resolutions()
+      .flatMap{
+      case(tarEnt, dupCandidates) =>
+        dupCandidates.map(dup =>
+          (tarEnt, dup))}.toSeq
+
+//  def filteredResolutions(compareScore:Double=0):Map[EntityStore.ID, Seq[BullsEyeEntityScore]] =
+//    resolutions()
+//      .map{case(tarEnt, dupCandidates) =>
+//      tarEnt -> dupCandidates.filter(dc => dc.score >= compareScore)}
+//
+//  def filteredResolutionPairs(compareScore:Double):Seq[(EntityStore.ID, BullsEyeEntityScore)] =
+//    filteredResolutions(compareScore).toSeq
+//      .flatMap{
+//      case(tarEnt, dupCandidates) =>
+//        dupCandidates.map(aDup => (tarEnt, aDup))}
+
+  override def deduplicate():Seq[BullsEyeDedupeCandidate] =
+    resolutionPairs
+      .map{
+        case(tarEntId, gbdc) =>
+          BullsEyeDedupeCandidate(
+            Seq(
+              toBullsEyeEntity(tarEntId, store),
+              toBullsEyeEntity(gbdc.entity.id, store)), gbdc.score)}
+
+  override def resolve(targetEntityId: EntityStore.ID):Seq[BullsEyeEntityScore] = {
     val targetRecord = new EntityRecord(targetEntityId, store.entity(targetEntityId))
     val candidates = innerDB.findCandidateMatches(targetRecord)
     logger.trace("Resolving targetRecord " + targetEntityId + " among " + candidates.size() + " candidates")
     candidates.flatMap(candidate => {
-        compare(targetRecord, candidate, thresh)
+        compare(targetRecord, candidate)
       }).toSeq
   }
 
@@ -92,7 +108,7 @@ class DukeResolver (
       val score = dukeProcessor.compare(targetRecord, candidateRecord)
       score >= thresh match {
         case true => {
-          Some(BullsEyeEntityScore(toBullsEyeEntity(candidateRecord), score))
+          Some(BullsEyeEntityScore(toBullsEyeEntity(candidateRecord), ABullsEyeScore(score)))
         }
         case false => None
       }

@@ -6,17 +6,23 @@ import org.oseraf.bullseye.service.Service
 import org.oseraf.bullseye.store.impl.blueprints.BlueprintsGraphStore
 import org.oseraf.bullseye.store._
 
+abstract class BullsEyeScore
+case class ABullsEyeScore(score:Double) extends BullsEyeScore
+case class BullsEyePairedScore(scorePair:Tuple2[Double, Double]) extends BullsEyeScore
+case class BullsEyeScores(scores:Iterable[Double]) extends BullsEyeScore
 
 case class BullsEyeEntity(id: String, attrs: Map[String, String] = Map(), edges: Seq[BullsEyeEdge] = Seq()) extends Entity {
   var attributes = attrs
 }
-case class BullsEyeEntityScore(entity: BullsEyeEntity, score: Double)
+case class BullsEyeEntityScore(entity: BullsEyeEntity, score:BullsEyeScore)
+case class BullsEyeEntityPairScore(override val entity: BullsEyeEntity, override val score:BullsEyePairedScore) extends BullsEyeEntityScore(entity, score)
+
 //source and target are entity ids
 case class BullsEyeEdge(source: String, target: String, attrs: Map[String, String] = Map())
 case class BullsEyeGraph(nodes: Seq[BullsEyeEntity], edges: Seq[BullsEyeEdge])
 case class ScoredBullsEyeGraph(nodes: Seq[BullsEyeEntityScore], edges: Seq[BullsEyeEdge])
 case class BullsEyeSearchType(id: String, name: String)
-case class BullsEyeDedupeCandidate(entities: Iterable[BullsEyeEntity], score: Double)
+case class BullsEyeDedupeCandidate(entities: Iterable[BullsEyeEntity], score:BullsEyeScore)
 
 trait DataService extends Service {
 
@@ -51,7 +57,7 @@ trait DataService extends Service {
 //  def getAttributes() = se.getAttributes
 //  def distinctValues(col:String) = se.distinctValues(col)
 //  def getDukeInfo() = ???
-//  def degreeDistribution() = se.degreeDistribution()
+//def degreeDistribution() = degreeDistribution()
   def numberDupsVsThreshold() = resolver.numberDupsVsThreshold(resolver.duke)
   def numberGraphDupsVsDukeThresholds() = resolver.numberGraphDupsVsDukeThresholds(resolver)
 
