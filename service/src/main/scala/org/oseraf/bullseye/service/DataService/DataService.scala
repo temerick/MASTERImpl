@@ -6,15 +6,26 @@ import org.oseraf.bullseye.service.Service
 import org.oseraf.bullseye.store.impl.blueprints.BlueprintsGraphStore
 import org.oseraf.bullseye.store._
 
-abstract class BullsEyeScore
-case class ABullsEyeScore(score:Double) extends BullsEyeScore
-case class BullsEyePairedScore(scorePair:Tuple2[Double, Double]) extends BullsEyeScore
-case class BullsEyeScores(scores:Iterable[Double]) extends BullsEyeScore
+abstract class BullsEyeScore {
+  def toMap: Map[String, _]
+}
+case class ABullsEyeScore(score:Double) extends BullsEyeScore {
+  override def toMap = Map("score" -> score)
+}
+case class BullsEyePairedScore(scorePair:(Double, Double)) extends BullsEyeScore {
+  override def toMap = Map("rawScore" -> scorePair._1, "improvedScore" -> scorePair._2)
+}
+case class BullsEyeScores(scores:Iterable[Double]) extends BullsEyeScore {
+  override def toMap = Map("scores" -> scores.toString)
+}
 
 case class BullsEyeEntity(id: String, attrs: Map[String, String] = Map(), edges: Seq[BullsEyeEdge] = Seq()) extends Entity {
   var attributes = attrs
 }
-case class BullsEyeEntityScore(entity: BullsEyeEntity, score:BullsEyeScore)
+class BullsEyeEntityScore(val entity: BullsEyeEntity, val score:BullsEyeScore)
+object BullsEyeEntityScore {
+  def apply(entity:BullsEyeEntity, score:BullsEyeScore) = new BullsEyeEntityScore(entity, score)
+}
 case class BullsEyeEntityPairScore(override val entity: BullsEyeEntity, override val score:BullsEyePairedScore) extends BullsEyeEntityScore(entity, score)
 
 //source and target are entity ids
@@ -42,30 +53,31 @@ trait DataService extends Service {
   val merger = new SimpleAddingMerger { override val store = entityStore.spliceStore }
   val splitter = new SimpleAddingSplitter { override val store = entityStore.spliceStore }
   val resolverConf: Configuration = ConfigLoader.load(conf.getConfig("duke").getString("confPath"))
-  val resolver = new GraphContextResolver {
+  val gresolver = new GraphContextResolver {
     override val dukeConf = resolverConf
     override val duke:DukeResolver = new DukeResolver(resolutionStore, resolverConf)
     override val store = resolutionStore
   }
 //  val resolver = new DukeResolver(resolutionStore, resolverConf)
 
-//  val se = new ScoreEvaluator {
-//    override val store = resolutionStore
-//  }
+  val re = new ResolverEvaluator {
+    override val resolver: Resolver = gresolver
+  }
 
 //  def getComps = ???
 //  def getAttributes() = se.getAttributes
 //  def distinctValues(col:String) = se.distinctValues(col)
 //  def getDukeInfo() = ???
 //def degreeDistribution() = degreeDistribution()
-  def numberDupsVsThreshold() = resolver.numberDupsVsThreshold(resolver.duke)
-  def numberGraphDupsVsDukeThresholds() = resolver.numberGraphDupsVsDukeThresholds(resolver)
+  def numberDupsVsThreshold() = re.numberDupsVsThreshold(gresolver.duke)
+  def numberGraphDupsVsDukeThresholds() = re.numberGraphDupsVsDukeThresholds(gresolver)
 
-  def resolve(targetEntityId: EntityStore.ID, limit:Option[Int] = None) : Seq[GraphBullsEyeEntityScore] =
-    resolver.resolve(targetEntityId, resolverConf.getMaybeThreshold, resolverConf.getThreshold)
+  def resolve(targetEntityId: EntityStore.ID, limit:Option[Int]=None) : Seq[(EntityStore.ID, _)] =
+    gresolver.resolve(targetEntityId)
 
-  def deduplicate(dukeScoreThresh:Double=.80, scoreDiffThresh:Double=.05): Seq[GraphBullsEyeDedupeCandidate] =
-    resolver.bullseyeGraphDedupCandidates(resolver, dukeScoreThresh, scoreDiffThresh) //resolver.duke.deduplicate(resolutionStore)
+  def deduplicate(dukeScoreThresh:Option[Double]=None, scoreDiffThresh:Option[Double]=None): Seq[(EntityStore.ID, EntityStore.ID, _)] =
+    gresolver.deduplicate()
+    //resolver.duke.deduplicate(resolutionStore)
 
 //  def graphDeduplicate(): Seq[GraphBullsEyeDedupeCandidate] =
 //    resolver.bullseyeGraphDedupCandidates(resolver, .80, 0)
@@ -88,7 +100,7 @@ trait DataService extends Service {
         val edges = entityStore.neighborhood(identifiedEntity.id).map(relId => entityStore.relationship(relId)).toSeq
         val entity = uic.EntityToBullsEyeEntity(identifiedEntity, edges)
         val connectEdges = entity.edges.filter(edge => connectIds.contains(edge.source) && connectIds.contains(edge.target))
-        (partialScores ++ Seq(BullsEyeEntityScore(entity, score)), partialEdges ++ connectEdges)
+        (partialScores ++ Seq(BullsEyeEntityScore(entity, ABullsEyeScore(score))), partialEdges ++ connectEdges)
     }
     ScoredBullsEyeGraph(entities, edges)
   }

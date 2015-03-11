@@ -40,7 +40,7 @@ object UiConverter {
     entities.map(ent => EntityToBullsEyeEntity(ent))
 
   def EntityWithScoreToBullsEyeEntityScore(entityScore: (IdentifiedEntity, Double)): BullsEyeEntityScore =
-    BullsEyeEntityScore(EntityToBullsEyeEntity(entityScore._1), entityScore._2)
+    BullsEyeEntityScore(EntityToBullsEyeEntity(entityScore._1), ABullsEyeScore(entityScore._2))
 
   def EntitiesWithScoresToBullsEyeEntityScore(entitiesWithScores: Seq[(IdentifiedEntity, Double)]): Seq[BullsEyeEntityScore] =
     entitiesWithScores.map(EntityWithScoreToBullsEyeEntityScore)

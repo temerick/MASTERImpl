@@ -61,7 +61,7 @@ trait DataAPI extends API with DataService with PrincipalAwareDataService with L
   get("/deduplicate") {
     val principal = request.getUserPrincipal
     logUser(principal, "deduplicate")
-    deduplicate(.80, 0)
+    deduplicate()
   }
 
 //  get("/graphDeduplicate") {

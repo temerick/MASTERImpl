@@ -13,7 +13,7 @@ trait PrincipalAwareDataService extends DataService {
   }
   def resolve(p:Principal, targetEntityId: EntityStore.ID, limit:Option[Int]) = {
     getBullsEyeEntityDetails(p, targetEntityId) match {
-      case Some(ent) => super.resolve(targetEntityId, limit).filter(scEnt => isOK(p, scEnt.entity))
+      case Some(ent) => super.resolve(targetEntityId, limit).filter(scEnt => isOK(p, entityStore.entity(scEnt._1)))
       case _ => List()
     }
   }
@@ -42,7 +42,8 @@ trait PrincipalAwareDataService extends DataService {
   }
   private def filterGraph(p:Principal, g:ScoredBullsEyeGraph) = {
     val scNodes = g.nodes.filter(scEnt => isOK(p, scEnt.entity))
-    val filteredEdgeNodes:Seq[BullsEyeEntityScore] = scNodes.map(node => node.copy(entity=node.entity.copy(edges=filterEdgesFrom(p, node.entity))))
+    val filteredEdgeNodes:Seq[BullsEyeEntityScore] = scNodes.map(node =>
+      new BullsEyeEntityScore(node.entity.copy(edges=filterEdgesFrom(p, node.entity)), node.score))
     val nodeIds = filteredEdgeNodes.map(_.entity.id)
     val edges = g.edges.filter(edge => nodeIds.contains(edge.source) && nodeIds.contains(edge.target))
     ScoredBullsEyeGraph(filteredEdgeNodes, edges)

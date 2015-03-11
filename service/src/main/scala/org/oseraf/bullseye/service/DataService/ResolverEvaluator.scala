@@ -1,11 +1,6 @@
 package org.oseraf.bullseye.service.DataService
 
-/**
- * Created by sstyer on 3/9/15.
- */
-
 import org.oseraf.bullseye.store.EntityStore
-
 import scala.collection.mutable
 
 trait ResolverEvaluator {
@@ -18,16 +13,20 @@ trait ResolverEvaluator {
     var ents = new mutable.HashSet[EntityStore.ID]
     for (i <- start to end by step) threshMap.put(i, 0)
 
-    resolver.deduplicate(0)
-      .foreach(bdc => {
-      val entId = bdc.entities.head.id
-      val dukeScore = toQuintInt(bdc.score)
-      if(!ents.contains(entId) && dukeScore >= start) {
-        val v = threshMap(dukeScore)
-        threshMap.put(dukeScore, v + 1)
-        ents += entId
+    resolver.deduplicate()
+      .foreach { case(e1, e2, score) =>
+      score match {
+        case (as: ABullsEyeScore) => {
+          val entId = e1
+          val dukeScore = toQuintInt(as.score)
+          if (!ents.contains(entId) && dukeScore >= start) {
+            val v = threshMap(dukeScore)
+            threshMap.put(dukeScore, v + 1)
+            ents += entId
+          }
+        }
       }
-    })
+    }
     threshMap.toMap
   }
 
@@ -42,16 +41,16 @@ trait ResolverEvaluator {
     }
     var ents = new mutable.HashSet[EntityStore.ID]
     resolver.deduplicate()
-      .foreach(gbdc => {
-      val entId = gbdc.entities.head.id
-      val dukeScore = toQuintInt(gbdc.score)
-      val graphScore = toQuintInt(gbdc.graphScore)
-      if(!ents.contains(entId) && dukeScore >= start && graphScore >= start) {
-        val v = m(dukeScore)(graphScore)
-        m(dukeScore)(graphScore) = v + 1
-        ents += entId
+      .foreach { case(e1, e2, score) =>
+        val entId = e1
+        val dukeScore = toQuintInt(score.scorePair._1)
+        val graphScore = toQuintInt(score.scorePair._2)
+        if (!ents.contains(entId) && dukeScore >= start && graphScore >= start) {
+          val v = m(dukeScore)(graphScore)
+          m(dukeScore)(graphScore) = v + 1
+          ents += entId
+        }
       }
-    })
     m
   }
 }

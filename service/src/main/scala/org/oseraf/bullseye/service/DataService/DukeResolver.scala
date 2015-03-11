@@ -6,18 +6,16 @@ import com.typesafe.scalalogging.slf4j.Logging
 import no.priv.garshol.duke._
 import no.priv.garshol.duke.databases.LuceneDatabase
 import org.oseraf.bullseye.store._
-import scala.collection.mutable
 
 import scala.collection.JavaConversions._
 import scala.util.{Failure, Success, Try}
 
 
-class DukeResolver (
-                    val store: EntityStore with EntityIterationPlugin with WriteEventPublisherPlugin,
-                    val dukeConf: Configuration
-                    )
+class DukeResolver (val store: EntityStore with EntityIterationPlugin with WriteEventPublisherPlugin,
+                    val dukeConf: Configuration)
   extends Logging with WriteEventListener with Resolver
 {
+  override type S = ABullsEyeScore
 
   val keeperProps = dukeConf.getProperties.map(_.getName)
   logger.info("Indexing graph in Duke, properties: " + keeperProps.mkString(", "))
@@ -61,38 +59,7 @@ class DukeResolver (
   //   (link from dataset of size 1, with simple comparison))
   val dukeProcessor = new Processor(dukeConf)
 
-  def resolutions():Map[EntityStore.ID, Seq[BullsEyeEntityScore]] =
-    store.entities.map(tarEnt =>
-      tarEnt -> resolve(tarEnt)).toMap
-
-  def resolutionPairs():Seq[(EntityStore.ID, BullsEyeEntityScore)] =
-    resolutions()
-      .flatMap{
-      case(tarEnt, dupCandidates) =>
-        dupCandidates.map(dup =>
-          (tarEnt, dup))}.toSeq
-
-//  def filteredResolutions(compareScore:Double=0):Map[EntityStore.ID, Seq[BullsEyeEntityScore]] =
-//    resolutions()
-//      .map{case(tarEnt, dupCandidates) =>
-//      tarEnt -> dupCandidates.filter(dc => dc.score >= compareScore)}
-//
-//  def filteredResolutionPairs(compareScore:Double):Seq[(EntityStore.ID, BullsEyeEntityScore)] =
-//    filteredResolutions(compareScore).toSeq
-//      .flatMap{
-//      case(tarEnt, dupCandidates) =>
-//        dupCandidates.map(aDup => (tarEnt, aDup))}
-
-  override def deduplicate():Seq[BullsEyeDedupeCandidate] =
-    resolutionPairs
-      .map{
-        case(tarEntId, gbdc) =>
-          BullsEyeDedupeCandidate(
-            Seq(
-              toBullsEyeEntity(tarEntId, store),
-              toBullsEyeEntity(gbdc.entity.id, store)), gbdc.score)}
-
-  override def resolve(targetEntityId: EntityStore.ID):Seq[BullsEyeEntityScore] = {
+  override def resolve(targetEntityId: EntityStore.ID):Seq[(EntityStore.ID, ABullsEyeScore)] = {
     val targetRecord = new EntityRecord(targetEntityId, store.entity(targetEntityId))
     val candidates = innerDB.findCandidateMatches(targetRecord)
     logger.trace("Resolving targetRecord " + targetEntityId + " among " + candidates.size() + " candidates")
@@ -101,27 +68,19 @@ class DukeResolver (
       }).toSeq
   }
 
-  def compare(targetRecord: EntityRecord, candidateRecord: Record, thresh:Double=0): Option[BullsEyeEntityScore] = {
+  def compare(targetRecord: EntityRecord, candidateRecord: Record, thresh:Double=0): Option[(EntityStore.ID, ABullsEyeScore)] = {
     if (areEquivalent(targetRecord, candidateRecord)) {
       None
     } else {
       val score = dukeProcessor.compare(targetRecord, candidateRecord)
       score >= thresh match {
         case true => {
-          Some(BullsEyeEntityScore(toBullsEyeEntity(candidateRecord), ABullsEyeScore(score)))
+          Some(toBullsEyeEntity(candidateRecord).id, ABullsEyeScore(score))
         }
         case false => None
       }
     }
   }
-      //logger.trace("Got comparison score " + score + " for " + candidateRecord.getValue(DukeResolver.ID_ATTRIBUTE))
-//      if (score >= dukeConf.getThreshold) {
-//        Some(BullsEyeEntityScore(toBullsEyeEntity(candidateRecord), score))
-//      } else {
-//        None
-//      }
-//    }
-//  }
 
   def toBullsEyeEntity(entId:EntityStore.ID, store:EntityStore with EntityIterationPlugin) = {
     UiConverter.EntityToBullsEyeEntity(entId, store.entity(entId))
@@ -138,7 +97,6 @@ class DukeResolver (
     val entityId = record.getValue(DukeResolver.ID_ATTRIBUTE)
     new EntityRecord(entityId, store.entity(entityId)).toBullsEyeEntity
   }
-
 
   class EntityRecord(val entityId: EntityStore.ID, val entity: Entity) extends Record {
     override def getProperties(): util.Collection[String] =
@@ -172,7 +130,6 @@ class DukeResolver (
     }
   }
 }
-
 
 object DukeResolver {
   final val ID_ATTRIBUTE = "OSERAF:resolve/duke/id"

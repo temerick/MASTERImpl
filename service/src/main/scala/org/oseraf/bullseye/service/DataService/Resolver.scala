@@ -1,11 +1,26 @@
 package org.oseraf.bullseye.service.DataService
 
-import org.oseraf.bullseye.store.{EntityStore, Entity}
+import org.oseraf.bullseye.store.{EntityIterationPlugin, EntityStore}
 
-/**
- * Created by sstyer on 3/9/15.
- */
 trait Resolver {
-  def deduplicate():Seq[BullsEyeDedupeCandidate]
-  def resolve(entId:EntityStore.ID):Seq[BullsEyeEntityScore]
+  type S
+  def resolve(entId:EntityStore.ID):Seq[(EntityStore.ID, S)]
+
+  val store:EntityStore with EntityIterationPlugin
+  def resolutions():Map[EntityStore.ID, Seq[(EntityStore.ID, S)]] =
+    store.entities.map(tarEnt =>
+      tarEnt -> resolve(tarEnt)).toMap
+
+  def resolutionPairs():Seq[(EntityStore.ID, EntityStore.ID, S)] =
+    resolutions()
+      .flatMap{
+      case(tarEnt, dupCandidates) =>
+        dupCandidates.map(dup =>
+          (tarEnt, dup._1, dup._2))}.toSeq
+
+  def deduplicate():Seq[(EntityStore.ID, EntityStore.ID, S)] =
+    resolutionPairs()
+      .map{
+        case (e1, e2, ps) =>
+          (e1, e2, ps)}
 }
