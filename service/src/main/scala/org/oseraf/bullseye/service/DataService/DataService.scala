@@ -22,13 +22,13 @@ case class BullsEyeScores(scores:Iterable[Double]) extends BullsEyeScore {
 case class BullsEyeEntity(id: String, attrs: Map[String, String] = Map(), edges: Seq[BullsEyeEdge] = Seq()) extends Entity {
   var attributes = attrs
 }
+
 class BullsEyeEntityScore(val entity: BullsEyeEntity, val score:BullsEyeScore)
 object BullsEyeEntityScore {
   def apply(entity:BullsEyeEntity, score:BullsEyeScore) = new BullsEyeEntityScore(entity, score)
 }
-case class BullsEyeEntityPairScore(override val entity: BullsEyeEntity, override val score:BullsEyePairedScore) extends BullsEyeEntityScore(entity, score)
 
-//source and target are entity ids
+case class BullsEyeEntityPairScore(override val entity: BullsEyeEntity, override val score:BullsEyePairedScore) extends BullsEyeEntityScore(entity, score)
 case class BullsEyeEdge(source: String, target: String, attrs: Map[String, String] = Map())
 case class BullsEyeGraph(nodes: Seq[BullsEyeEntity], edges: Seq[BullsEyeEdge])
 case class ScoredBullsEyeGraph(nodes: Seq[BullsEyeEntityScore], edges: Seq[BullsEyeEdge])
@@ -58,29 +58,17 @@ trait DataService extends Service {
     override val duke:DukeResolver = new DukeResolver(resolutionStore, resolverConf)
     override val store = resolutionStore
   }
-//  val resolver = new DukeResolver(resolutionStore, resolverConf)
 
-  val re = new ResolverEvaluator {
-    override val resolver: Resolver = gresolver
-  }
+  val re = new ResolverEvaluator {}
 
-//  def getComps = ???
-//  def getAttributes() = se.getAttributes
-//  def distinctValues(col:String) = se.distinctValues(col)
-//  def getDukeInfo() = ???
-//def degreeDistribution() = degreeDistribution()
-  def numberDupsVsThreshold() = re.numberDupsVsThreshold(gresolver.duke)
-  def numberGraphDupsVsDukeThresholds() = re.numberGraphDupsVsDukeThresholds(gresolver)
+  def numberDupsVsThreshold = re.numberDupsVsThreshold(gresolver.duke)
+  def numberGraphDupsVsDukeThresholds = re.numberGraphDupsVsDukeThresholds(gresolver)
 
   def resolve(targetEntityId: EntityStore.ID, limit:Option[Int]=None) : Seq[(EntityStore.ID, _)] =
     gresolver.resolve(targetEntityId)
 
   def deduplicate(dukeScoreThresh:Option[Double]=None, scoreDiffThresh:Option[Double]=None): Seq[(EntityStore.ID, EntityStore.ID, _)] =
     gresolver.deduplicate()
-    //resolver.duke.deduplicate(resolutionStore)
-
-//  def graphDeduplicate(): Seq[GraphBullsEyeDedupeCandidate] =
-//    resolver.bullseyeGraphDedupCandidates(resolver, .80, 0)
 
   /**
    * Find entities most similar to the specified query

@@ -4,10 +4,8 @@ import org.oseraf.bullseye.store.EntityStore
 import scala.collection.mutable
 
 trait ResolverEvaluator {
-  val resolver:Resolver
 
   def toQuintInt(dub:Double):Int = (((dub * 20).toInt / 20.0) * 100).toInt
-
   def numberDupsVsThreshold(resolver:DukeResolver, start:Int=65, step:Int=5, end:Int=100):Map[Int, Int] = {
     var threshMap = new mutable.HashMap[Int, Int]
     var ents = new mutable.HashSet[EntityStore.ID]
@@ -15,18 +13,14 @@ trait ResolverEvaluator {
 
     resolver.deduplicate()
       .foreach { case(e1, e2, score) =>
-      score match {
-        case (as: ABullsEyeScore) => {
           val entId = e1
-          val dukeScore = toQuintInt(as.score)
+          val dukeScore = toQuintInt(score.score)
           if (!ents.contains(entId) && dukeScore >= start) {
             val v = threshMap(dukeScore)
             threshMap.put(dukeScore, v + 1)
             ents += entId
           }
-        }
       }
-    }
     threshMap.toMap
   }
 
