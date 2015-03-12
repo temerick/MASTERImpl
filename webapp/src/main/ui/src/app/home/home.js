@@ -636,7 +636,7 @@ angular.module('bullseye.home', [])
                         }
                         return {
                             id: node.id,
-                            group: node.group || "unselected"
+                            group: node.group || "unselected",
                             label: node.attrs.Name || node.attrs.name || node.attrs.displayName || node.attrs.id
                         };
                     });
