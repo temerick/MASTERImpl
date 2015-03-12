@@ -33,7 +33,7 @@ case class BullsEyeEdge(source: String, target: String, attrs: Map[String, Strin
 case class BullsEyeGraph(nodes: Seq[BullsEyeEntity], edges: Seq[BullsEyeEdge])
 case class ScoredBullsEyeGraph(nodes: Seq[BullsEyeEntityScore], edges: Seq[BullsEyeEdge])
 case class BullsEyeSearchType(id: String, name: String)
-case class BullsEyeDedupeCandidate(entities: Iterable[BullsEyeEntity], score:BullsEyeScore)
+case class BullsEyeDedupeCandidate(entities: Iterable[BullsEyeEntity], score:Map[String, _])
 
 trait DataService extends Service {
 
@@ -64,10 +64,10 @@ trait DataService extends Service {
   def numberDupsVsThreshold = re.numberDupsVsThreshold(gresolver.duke)
   def numberGraphDupsVsDukeThresholds = re.numberGraphDupsVsDukeThresholds(gresolver)
 
-  def resolve(targetEntityId: EntityStore.ID, limit:Option[Int]=None) : Seq[(EntityStore.ID, _)] =
+  def resolve(targetEntityId: EntityStore.ID, limit:Option[Int]=None) : Seq[(EntityStore.ID, gresolver.S)] =
     gresolver.resolve(targetEntityId)
 
-  def deduplicate(dukeScoreThresh:Option[Double]=None, scoreDiffThresh:Option[Double]=None): Seq[(EntityStore.ID, EntityStore.ID, _)] =
+  def deduplicate(dukeScoreThresh:Option[Double]=None, scoreDiffThresh:Option[Double]=None): Seq[(EntityStore.ID, EntityStore.ID, gresolver.S)] =
     gresolver.deduplicate()
 
   /**
@@ -103,7 +103,7 @@ trait DataService extends Service {
   def merge (entityIds: Seq[EntityStore.ID], mergedEntity:BullsEyeEntity): BullsEyeEntity = {
     val entToMerge = replaceId(mergedEntity, mergeIdentifier.targetId(entityIds, mergedEntity.id))
     merger.merge(entityIds, uic.BullseyeEntityToBlueprintsGraphStore(entToMerge), entToMerge.id)
-    expandEntity(entToMerge.id)
+    uic.EntityToFullBullsEyeEntity(entToMerge.id, entityStore)
   }
 
   /**
@@ -121,7 +121,7 @@ trait DataService extends Service {
     newEntities.foreach(ent => uic.AddBullseyeEntityWithNeighborhood(ent, store))
     // don't trust that the entity hasn't changed
     // split (/splice) may update attributes, for example, so we have to look the entity back up when we expand it
-    splitter.split(entityId, store).map(ent => expandEntity(ent.id))
+    splitter.split(entityId, store).map(ent => uic.EntityToFullBullsEyeEntity(ent.id, entityStore))
   }
 
   private def replaceId(ent: BullsEyeEntity, newId: EntityStore.ID): BullsEyeEntity = {
@@ -169,12 +169,4 @@ trait DataService extends Service {
     entityStore.searchableAttributes.toSeq.map(searchAttr => {
       BullsEyeSearchType(searchAttr._1, searchAttr._2)
     })
-
-  private def expandEntity(entityId: EntityStore.ID): BullsEyeEntity =
-    expandEntity(entityStore.identifiedEntity(entityId))
-
-  private def expandEntity(entity: IdentifiedEntity): BullsEyeEntity = {
-    val relationships = entityStore.neighborhood(entity.id).map(rid => entityStore.relationship(rid))
-    uic.EntityToBullsEyeEntity(entity, relationships.toSeq)
-  }
 }

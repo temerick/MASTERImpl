@@ -89,7 +89,6 @@ trait Identified {
   val id: EntityStore.ID
 }
 
-
 trait AttributeContainer {
   var attributes: Map[AttributeContainer.KEY, AttributeContainer.VALUE]
   def attribute(key: AttributeContainer.KEY): AttributeContainer.VALUE = attributes(key)
@@ -106,7 +105,6 @@ object AttributeContainer {
       override var attributes = Map.empty[KEY, VALUE]
     }
 }
-
 
 trait Entity extends AttributeContainer
 
@@ -133,11 +131,9 @@ object IdentifiedEntity {
     }
 }
 
-
 trait Relationship extends AttributeContainer {
   def connecting(): Iterable[EntityStore.ID]
 }
-
 
 trait BinaryRelationship extends Relationship {
   def from: EntityStore.ID

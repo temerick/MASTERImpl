@@ -36,6 +36,14 @@ object UiConverter {
       Seq()
     )
 
+  def EntityToFullBullsEyeEntity(entity: IdentifiedEntity, entityStore:EntityStore with NeighborhoodPlugin): BullsEyeEntity = {
+    val relationships = entityStore.neighborhood(entity.id).map(rid => entityStore.relationship(rid))
+    EntityToBullsEyeEntity(entity, relationships.toSeq)
+  }
+
+  def EntityToFullBullsEyeEntity(entityId: EntityStore.ID, entityStore:EntityStore with NeighborhoodPlugin): BullsEyeEntity =
+    EntityToFullBullsEyeEntity(entityStore.identifiedEntity(entityId), entityStore)
+
   def EntitiesToBullsEyeEntities(entities: Seq[IdentifiedEntity]): Seq[BullsEyeEntity] =
     entities.map(ent => EntityToBullsEyeEntity(ent))
 
