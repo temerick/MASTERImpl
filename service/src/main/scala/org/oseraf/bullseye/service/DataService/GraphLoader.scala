@@ -18,7 +18,7 @@ trait GraphLoader extends Service {
       val value = s(1).dropRight(1)         //remove the last quote
       aConf.setProperty(key, value)
     })
-    if(conf.getBoolean("titan")) {     //kinda sad that we couldn't get this to work with the Blueprints GraphFactory :(
+    if(conf.hasPath("titan") && conf.getBoolean("titan")) {     //kinda sad that we couldn't get this to work with the Blueprints GraphFactory :(
       TitanFactory.open(aConf)
     }
     else {
