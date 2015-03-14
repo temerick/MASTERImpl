@@ -4,30 +4,41 @@ import java.util
 
 import com.typesafe.scalalogging.slf4j.Logging
 import no.priv.garshol.duke._
-import no.priv.garshol.duke.databases.LuceneDatabase
 import org.oseraf.bullseye.service.Service
 import org.oseraf.bullseye.store._
 
 import scala.collection.JavaConversions._
+import scala.util.Try
 
 
 class DukeResolver(
                     store: EntityStore with EntityIterationPlugin with WriteEventPublisherPlugin,
-                    dukeConf: Configuration
+                    dukeConf: Configuration,
+                    reindex: Boolean
                     )
   extends Service with Logging with WriteEventListener
 {
 
   val keeperProps = dukeConf.getProperties.map(_.getName)
-  logger.info("Indexing graph in Duke, properties: " + keeperProps.mkString(", "))
   val innerDB = {
-    val db = new LuceneDatabase()
-    db.setConfiguration(dukeConf)
-    store.entities.foreach(eid => db.index(new EntityRecord(eid, store.entity(eid))))
-    db.commit()
+    val db = dukeConf.getDatabase(reindex)
+    if (reindex) {
+      logger.info("Indexing graph in Duke, properties: " + keeperProps.mkString(", "))
+      var indexCount = 0
+      store.entities.foreach(eid => {
+        db.index(new EntityRecord(eid, store.entity(eid)))
+        indexCount += 1
+        if (indexCount % 1000 == 0) {
+          logger.info(s"Indexed $indexCount, inMemory: ${db.isInMemory}")
+        }
+      })
+      db.commit()
+    } else {
+      Try(db.index(null)) // force init for LuceneDatabase
+      logger.info("Using saved index: " + db.toString)
+    }
     db
   }
-  logger.info("Done indexing initial graph data: " + innerDB.toString)
 
   // how do we handle updates and deletions?
   store.addListener(this)
