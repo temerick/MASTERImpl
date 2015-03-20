@@ -26,6 +26,8 @@ angular.module('bullseye.home', [])
                 entity.attrs.url || entity.attrs.title ||
                 entity.attrs.attribute_value ||
                 (entity.attrs.entity_type ? entity.id + " (" + entity.attrs.entity_type + ")" : false) ||
+                entity.attrs.disambiguated_name ||
+                entity.attrs.label ||
                 entity.id;
         };
         this.formatDisplayName = displayName;
