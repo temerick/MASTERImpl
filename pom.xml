@@ -16,16 +16,6 @@
     </modules>
 
     <properties>
-        <bullseye.service.store.clazz>org.oseraf.bullseye.service.DataService.BlueprintsBullseyeEntityStore</bullseye.service.store.clazz>
-        <bullseye.app.contextPath>/bullseye</bullseye.app.contextPath>
-        <bullseye.service.duke.confPath>bullseye/dukeConf.xml</bullseye.service.duke.confPath>
-        <bullseye.service.graph.graphSettings>["blueprints.graph=com.tinkerpop.blueprints.impls.tg.TinkerGraph"]</bullseye.service.graph.graphSettings>
-
-        <bullseye.service.ikanow.url>_</bullseye.service.ikanow.url>
-        <bullseye.service.ikanow.user>_</bullseye.service.ikanow.user>
-        <bullseye.service.ikanow.password>_</bullseye.service.ikanow.password>
-        <bullseye.service.ikanow.communities>_</bullseye.service.ikanow.communities>
-
         <scala.major.version>2.10</scala.major.version>
         <scala.version>2.10.0</scala.version>
         <scalatra.version>2.2.2</scalatra.version>
