@@ -1,0 +1,80 @@
+{
+    "graph": {
+        "mode": "NORMAL",
+        "vertices": [
+            {
+                "_id": "1",
+                "_type": "vertex",
+                "Name": "Alice",
+                "Type": "Person"
+            },
+            {
+                "_id": "2",
+                "_type": "vertex",
+                "Name": "Bob",
+                "Type": "Person"
+            },
+            {
+                "_id": "3",
+                "_type": "vertex",
+                "Name": "Carol",
+                "Type": "Person"
+            },
+            {
+                "_id": "4",
+                "_type": "vertex",
+                "Name": "Alison",
+                "Type": "Person"
+            },
+            {
+                "_id": "5",
+                "_type": "vertex",
+                "Name": "bob",
+                "Type": "Person"
+            },
+            {
+                "_id": "6",
+                "_type": "vertex",
+                "Name": "Carolina",
+                "Type": "Region"
+            }
+        ],
+        "edges": [
+            {
+                "_id": "7",
+                "_type": "edge",
+                "_label": "knows",
+                "_inV": "1",
+                "_outV": "2"
+            },
+            {
+                "_id": "8",
+                "_type": "edge",
+                "_label": "knows",
+                "_inV": "3",
+                "_outV": "1"
+            },
+            {
+                "_id": "9",
+                "_type": "edge",
+                "_label": "knows",
+                "_inV": "3",
+                "_outV": "2"
+            },
+            {
+                "_id": "10",
+                "_type": "edge",
+                "_label": "knows",
+                "_inV": "2",
+                "_outV": "4"
+            },
+            {
+                "_id": "11",
+                "_type": "edge",
+                "_label": "livesIn",
+                "_inV": "3",
+                "_outV": "6"
+            }
+        ]
+    }
+}
