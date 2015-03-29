@@ -1,10 +1,10 @@
 package org.oseraf.bullseye.store
 
+import com.tinkerpop.blueprints.Contains
 import org.oseraf.bullseye.store.impl.blueprints.BlueprintsGraphStore
 
-import scala.util.{Failure, Success, Try}
-import com.thinkaurelius.titan.core.attribute.Text._
 import scala.collection.JavaConversions._
+import scala.util.{Failure, Success, Try}
 /**
  * Created by nhamblet.
  */
@@ -55,7 +55,7 @@ trait BruteForceAttributeBasedNaivelyFuzzySearchPlugin
 trait IndexedBlueprintsFuzzyVertexSearchPlugin extends AttributeBasedNaivelyFuzzySearchPlugin with BruteForceAttributeBasedNaivelyFuzzySearchPlugin {
   val store:BlueprintsGraphStore with EntityIterationPlugin
   override def search(key: AttributeContainer.KEY, value:AttributeContainer.VALUE):Iterable[(EntityStore.ID, Double)] = {
-    store.graph.query().has(key, CONTAINS, value).vertices().toList.map(v => (v.getId.toString, score(v.getProperty(key), value)))
+    store.graph.query().has(key, Contains.IN, value).vertices().toList.map(v => (v.getId.toString, score(v.getProperty(key), value)))
   }
 }
 

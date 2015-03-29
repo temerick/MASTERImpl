@@ -2,6 +2,7 @@ package org.oseraf.bullseye.service.DataService
 
 import com.tinkerpop.blueprints.Graph
 import com.typesafe.config.Config
+import org.oseraf.bullseye.store.AttributeContainer.KEY
 import org.oseraf.bullseye.store._
 import org.oseraf.bullseye.store.impl.blueprints.{IndexedBlueprintsGraphStore, BlueprintsGraphStore}
 
@@ -28,8 +29,18 @@ class BlueprintsBullseyeEntityStore
   
   var graph: Graph = null
   var innerStore: BlueprintsGraphStore with WriteEventPublisherPlugin = null
+
+  import scala.collection.JavaConversions._
+  var specifiedAttrs: Option[Iterable[(KEY, String)]] = None
   
   override def setup(conf: Config) = {
+    getStore(conf)
+    if (conf.hasPath("searchableAttributes")) {
+      specifiedAttrs = Some(conf.getConfig("searchableAttributes").entrySet().map(entry => (entry.getKey, conf.getConfig("searchableAttributes").getString(entry.getKey))))
+    }
+  }
+
+  def getStore(conf: Config) = {
     graph = GraphLoader.createGraph(conf)
     innerStore = new BlueprintsGraphStore(graph) with WriteEventPublisherPlugin
   }
@@ -40,8 +51,8 @@ class BlueprintsBullseyeEntityStore
   override def splitIdentifier = new SimpleAddingSplitterIdentifier {}
 
   def search(key: AttributeContainer.KEY, value: AttributeContainer.VALUE) = innerStore.search(key, value)
-  def searchableAttributes = innerStore.searchableAttributes
-  
+  def searchableAttributes = specifiedAttrs.getOrElse(innerStore.searchableAttributes)
+
   def addEntity(id: EntityStore.ID, entity: Entity) = innerStore.addEntity(id, entity)
   def addRelationship(id: EntityStore.ID, relationship: Relationship) = innerStore.addRelationship(id, relationship)
   def entity(id: EntityStore.ID) = innerStore.entity(id)
@@ -58,7 +69,7 @@ class BlueprintsBullseyeEntityStore
 }
 
 class IndexedBlueprintsBullseyeEntityStore extends BlueprintsBullseyeEntityStore {
-  override def setup(conf: Config) = {
+  override def getStore(conf: Config) = {
     graph = GraphLoader.createGraph(conf)
     innerStore = new IndexedBlueprintsGraphStore(graph) with WriteEventPublisherPlugin
   }
