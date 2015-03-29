@@ -27,10 +27,10 @@ Assuming the requirements above, `mvn clean install` should build Bullseye.
 ## Running
 
 Bullseye is currently built as a runnable jar. You should be able to run it with:
-> `java -Dconfig.file=webapp/target/classes/example/bullseye.conf -jar webapp/target/bullseye-webapp-0.0.1.war`
+> `java -Dconfig.file=webapp/target/classes/example/bullseye.conf -jar webapp/target/bullseye.war`
 By default, this will launch the bullseye on port 8081, and it can be accessed in a browser at [http://localhost:8081/bullseye].
 If you wish to run on a different port, the port can be specified as an additional argument at the end of the command above
-(for example, `java -jar bullseye-webapp-0.0.1.war 8080`).
+(for example, `java -jar bullseye.war 8080`).
 
 You can also deploy the war into your server of choice. We have tested with [tomcat](http://tomcat.apache.org/) versions 7(.0.59) and 8(.0.17).
 Additional documentation for such deployments, along with additional configuration documentation, will be available on the [wiki](https://github.com/OSERAF/MASTERImpl/wiki) soon.

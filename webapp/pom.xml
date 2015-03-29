@@ -71,6 +71,7 @@
                             <filtering>true</filtering>
                         </resource>
                     </webResources>
+                    <warName>bullseye</warName>
                 </configuration>
                 <executions>
                     <execution>
