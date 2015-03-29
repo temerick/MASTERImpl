@@ -29,7 +29,7 @@ Assuming the requirements above, `mvn clean install` should build Bullseye.
 Bullseye is currently built as a runnable jar. You should be able to run it with:
 > `java -Dconfig.file=webapp/target/classes/example/bullseye.conf -jar webapp/target/bullseye.war`
 
-By default, this will launch the bullseye on port 8081, and it can be accessed in a browser at [http://localhost:8081/bullseye].
+By default, this will launch the bullseye on port 8081, and it can be accessed in a browser at [http://localhost:8081/bullseye](http://localhost:8081/bullseye).
 If you wish to run on a different port, the port can be specified as an additional argument at the end of the command above
 (for example, `java -jar bullseye.war 8080`).
 
