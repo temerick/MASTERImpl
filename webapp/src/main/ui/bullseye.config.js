@@ -2,8 +2,8 @@
 //
 module.exports = {
     
-    // Where the project is build during development.
-    buildDir: '../../../target/bullseye-webapp-0.0.1',
+    // Where the project is built during development.
+    buildDir: '../../../target/bullseye-webapp-0.0.2-SNAPSHOT',
 
     // The location of the html page that will be built.
     // Change if needed...
