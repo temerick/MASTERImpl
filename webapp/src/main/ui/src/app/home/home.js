@@ -616,7 +616,8 @@ angular.module('bullseye.home', [])
             scope: {
                 data: '=',
                 selection: '=',
-                select: '&select'
+                select: '&select',
+                showNeighborhood: '&showneighborhood'
             },
             link: function (scope, element, attrs) {
                 var viz,
@@ -634,6 +635,11 @@ angular.module('bullseye.home', [])
                     try {
                         scope.$root.$digest(); // sinner
                     } catch (e) {
+                    }
+                });
+                viz.on('doubleClick', function (properties) {
+                    if (_.size(properties.nodes) > 0) {
+                        scope.showNeighborhood()({ entity: { id: properties.nodes[0] } });
                     }
                 });
                 scope.$watch('selection', function (entityIds) {
