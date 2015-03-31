@@ -1,7 +1,10 @@
-angular.module('bullseye.home', [])
+angular.module('bullseye.home', [
+    'ngResource'
+])
     .config(['$routeProvider', function ($routeProvider) {
         $routeProvider.when('/home', {
             templateUrl: 'home/home.tpl.html',
+            reloadOnSearch: false
         });
     }])
     .factory('SearchTypes', ['$resource', function ($resource) {
@@ -36,7 +39,7 @@ angular.module('bullseye.home', [])
             return entity;
         };
     })
-    .controller('HomeController', ['$scope', '$modal', 'DataService', 'EntityOps', 'UtilService', function($scope, $modal, DataService, EntityOps, UtilService) {
+    .controller('HomeController', ['$scope', '$location', '$modal', 'DataService', 'EntityOps', 'UtilService', function($scope, $location, $modal, DataService, EntityOps, UtilService) {
         var resolveModal,
         splitModal,
         deduplicateModal,
@@ -359,8 +362,15 @@ angular.module('bullseye.home', [])
                 searchType: null,
                 query: ''
             },
-            isSearching: false
+            isSearching: false,
+            firstSearchKey: null
         };
+        if ('searchK' in $location.search()) {
+            $scope.searchData.firstSearchKey = $location.search().searchK;
+        }
+        if ('searchV' in $location.search()) {
+            $scope.searchData.filters.query = $location.search().searchV;
+        }
         $scope.searchFilterQuery = '';
         $scope.dedupeIsRunning = false;
         $scope.$watch(DataService.getSearchTypes, function (types) {
@@ -372,7 +382,13 @@ angular.module('bullseye.home', [])
                 return (a.name < b.name) ? -1 : ((a.name > b.name) ? 1 : 0);
             });
             $scope.searchData.filters.searchType = $scope.searchData.filters.searchTypes[0];
-            if (hasIdSearch) {
+            if ($scope.searchData.firstSearchKey !== null) {
+                $scope.searchData.filters.searchType =
+                    _.find($scope.searchData.filters.searchTypes, { 'id': $scope.searchData.firstSearchKey });
+                if ('searchV' in $location.search() && $scope.searchData.filters.searchTypes.length > 0) {
+                    $scope.searchClickHandler();
+                }
+            } else if (hasIdSearch) {
                 for (var idx = $scope.searchData.filters.searchTypes.length - 1; idx >= 0; idx--) {
                     if ($scope.searchData.filters.searchTypes[idx].id === "OSERAF:search/id") {
                         $scope.searchData.filters.searchType = $scope.searchData.filters.searchTypes[idx];
@@ -381,7 +397,7 @@ angular.module('bullseye.home', [])
                 }
             }
         });
-        $scope.nickSearch = function() {
+        $scope.searchClickHandler = function() {
             $scope.search($scope.searchData.filters.query);
         };
         $scope.isSearching = function() {
@@ -402,6 +418,10 @@ angular.module('bullseye.home', [])
         $scope.search = function (query) {
             $scope.searchData.isSearching = true;
             DataService.search(query, $scope.searchData.filters.searchType, function() {
+                $location.search({
+                    'searchK': $scope.searchData.filters.searchType.id,
+                    'searchV': query
+                });
                 $scope.searchData.isSearching = false;
             });
         };
