@@ -2,13 +2,10 @@ angular.module('bullseye.dataService', [
     'bullseye.http',
     'bullseye.util'
 ])
-    .factory('DataService', ['SearchTypes', 'EntityOps', 'UtilService', function (SearchTypes, EntityOps, UtilService) {
-        var searchTypes = [],
-        entityData = [],
-        linkData = [];
-        SearchTypes.query().$promise.then(function (types) {
-            searchTypes = types;
-        });
+    .factory('DataService', ['EntityOps', 'UtilService', function (EntityOps, UtilService) {
+        var entityData = [],
+            linkData = []
+        ;
         return {
             showNeighborhood: function (entityScore) {
                 EntityOps.neighborhood({eId: entityScore.entity.id}).$promise.then(function (neighborhoodGraph) {
@@ -44,9 +41,6 @@ angular.module('bullseye.dataService', [
                 linkData = linkData.filter(function (e) {
                     return e.source.id != entityScore.entity.id && e.target.id != entityScore.entity.id;
                 });
-            },
-            getSearchTypes: function () {
-                return searchTypes;
             },
             getEntityData: function () {
                 return entityData;
