@@ -70,33 +70,5 @@ angular.module('bullseye.masthead.search', [
         return {
             restrict: 'E',
             templateUrl: 'masthead/tpls/search.tpl.html'
-//            link: function (scope, element, attrs) {
-//                scope.searchData = SearchService.searchData;
-//                scope.$watch(DataService.getSearchTypes, function (types) {
-//                    var hasIdSearch = false;
-//                    scope.searchData.filters.searchTypes = types.sort(function (a, b) {
-//                        if ((a.id === "OSERAF:search/id") || (b.id === "OSERAF:search/id")) {
-//                            hasIdSearch = true;
-//                        }
-//                        return (a.name < b.name) ? -1 : ((a.name > b.name) ? 1 : 0);
-//                    });
-//                    scope.searchData.filters.searchType = scope.searchData.filters.searchTypes[0];
-//                    if (scope.searchData.firstSearchKey !== null) {
-//                        scope.searchData.filters.searchType =
-//                            _.find(scope.searchData.filters.searchTypes, { 'id': scope.searchData.firstSearchKey });
-//                        if ('searchV' in $location.search() && scope.searchData.filters.searchTypes.length > 0) {
-//                            doSearch();
-//                        }
-//                    } else if (hasIdSearch) {
-//                        for (var idx = scope.searchData.filters.searchTypes.length - 1; idx >= 0; idx--) {
-//                            if (scope.searchData.filters.searchTypes[idx].id === "OSERAF:search/id") {
-//                                scope.searchData.filters.searchType = scope.searchData.filters.searchTypes[idx];
-//                                break;
-//                            }
-//                        }
-//                    }
-//                });
-//                scope.doSearch = SearchService.doSearch;
-//            }
         };
     }]);
