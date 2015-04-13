@@ -4,7 +4,8 @@ angular.module('bullseye.home', [
     'bullseye.util',
     'bullseye.modal',
     'bullseye.dataService',
-    'bullseye.home.views'
+    'bullseye.home.views',
+    'bullseye.masthead'
 ])
     .config(['$routeProvider', function ($routeProvider) {
         $routeProvider.when('/home', {
@@ -26,56 +27,8 @@ angular.module('bullseye.home', [
                     richSelection: [],
                     network: []
                 };
-                $scope.searchData = {
-                    filters: {
-                        searchTypes: [],
-                        searchType: null,
-                        query: ''
-                    },
-                    isSearching: false,
-                    firstSearchKey: null
-                };
-                if ('searchK' in $location.search()) {
-                    $scope.searchData.firstSearchKey = $location.search().searchK;
-                }
-                if ('searchV' in $location.search()) {
-                    $scope.searchData.filters.query = $location.search().searchV;
-                }
-                $scope.searchFilterQuery = '';
+
                 $scope.dedupeIsRunning = false;
-                $scope.$watch(DataService.getSearchTypes, function (types) {
-                    var hasIdSearch = false;
-                    $scope.searchData.filters.searchTypes = types.sort(function (a, b) {
-                        if ((a.id === "OSERAF:search/id") || (b.id === "OSERAF:search/id")) {
-                            hasIdSearch = true;
-                        }
-                        return (a.name < b.name) ? -1 : ((a.name > b.name) ? 1 : 0);
-                    });
-                    $scope.searchData.filters.searchType = $scope.searchData.filters.searchTypes[0];
-                    if ($scope.searchData.firstSearchKey !== null) {
-                        $scope.searchData.filters.searchType =
-                            _.find($scope.searchData.filters.searchTypes, { 'id': $scope.searchData.firstSearchKey });
-                        if ('searchV' in $location.search() && $scope.searchData.filters.searchTypes.length > 0) {
-                            $scope.searchClickHandler();
-                        }
-                    } else if (hasIdSearch) {
-                        for (var idx = $scope.searchData.filters.searchTypes.length - 1; idx >= 0; idx--) {
-                            if ($scope.searchData.filters.searchTypes[idx].id === "OSERAF:search/id") {
-                                $scope.searchData.filters.searchType = $scope.searchData.filters.searchTypes[idx];
-                                break;
-                            }
-                        }
-                    }
-                });
-                $scope.searchClickHandler = function() {
-                    $scope.search($scope.searchData.filters.query);
-                };
-                $scope.isSearching = function() {
-                    return $scope.searchData.isSearching;
-                };
-                $scope.hasSearchField = function() {
-                    return $scope.searchFilterQuery.length > 0;
-                };
                 $scope.isDeduping = function() {
                     return $scope.dedupeIsRunning;
                 };
@@ -85,16 +38,6 @@ angular.module('bullseye.home', [
                 $scope.$watch(DataService.transformForNetwork, function (data) {
                     $scope.data.network = data;
                 }, true);
-                $scope.search = function (query) {
-                    $scope.searchData.isSearching = true;
-                    DataService.search(query, $scope.searchData.filters.searchType, function() {
-                        $location.search({
-                            'searchK': $scope.searchData.filters.searchType.id,
-                            'searchV': query
-                        });
-                        $scope.searchData.isSearching = false;
-                    });
-                };
                 $scope.resolveItem = function (d) {
                     EntityOps.resolve({eId: d.entity.id}).$promise.then(function (resolutions) {
                         Modals.resolve

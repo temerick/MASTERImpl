@@ -5,11 +5,11 @@
     <div class="entity-search">
         <select class="form-control" ng-model="searchData.filters.searchType" ng-options="t.name for t in searchData.filters.searchTypes"></select>
         <input type="text" class="form-control" ng-model="searchData.filters.query"/>
-        <a role="button" type="button" class="btn btn-primary" ng-class="{enabled: hasSearchField()}" ng-click="searchClickHandler()">
-            <i class="fa fa-spinner fa-spin" ng-class="{'zero-width': !isSearching()}"></i> <!-- class reacts faster than ng-show and ng-if -->
+        <a role="button" type="button" class="btn btn-primary" ng-class="{enabled: searchData.isSearching}" ng-click="doSearch()">
+            <i class="fa fa-spinner fa-spin" ng-class="{'zero-width': !searchData.isSearching}"></i> <!-- class reacts faster than ng-show and ng-if -->
             Search
         </a>
-        <a role="button" type="button" class="btn btn-primary" ng-click="deduplicate()">
+        <a role="button" type="button" class="btn btn-primary" ng-click="deduplicate()()">
             <i class="fa fa-spinner fa-spin" ng-class="{'zero-width': !isDeduping()}"></i>
             Deduplicate
         </a>
