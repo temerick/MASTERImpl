@@ -28,10 +28,6 @@ angular.module('bullseye.home', [
                     network: []
                 };
 
-                $scope.dedupeIsRunning = false;
-                $scope.isDeduping = function() {
-                    return $scope.dedupeIsRunning;
-                };
                 $scope.$watch(DataService.getEntityData, function (data) {
                     $scope.data.raw = data;
                 });
@@ -43,16 +39,6 @@ angular.module('bullseye.home', [
                         Modals.resolve
                             .openModal(d, resolutions)
                             .result.then(DataService.addNodes);
-                    });
-                };
-                $scope.deduplicate = function () {
-                    $scope.dedupeIsRunning = true;
-                    EntityOps.deduplicate().$promise.then(function (deduplications) {
-                        var sortedDedupes = deduplications.sort(function (a, b) { return b.score - a.score; });
-                        $scope.dedupeIsRunning = false;
-                        Modals.deduplicate
-                            .openModal(deduplications)
-                            .result.then(DataService.deduplicate);
                     });
                 };
                 $scope.splitItem = function (entity) {

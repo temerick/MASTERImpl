@@ -2,16 +2,13 @@
     <div class="navbar-header">
         <a class="navbar-brand" href="#/home"><i class="fa fa-bullseye"></i>BULLSEYE</a>
     </div>
-    <div class="entity-search">
+    <div class="controls">
         <select class="form-control" ng-model="searchData.filters.searchType" ng-options="t.name for t in searchData.filters.searchTypes"></select>
         <input type="text" class="form-control" ng-model="searchData.filters.query"/>
         <a role="button" type="button" class="btn btn-primary" ng-class="{enabled: searchData.isSearching}" ng-click="doSearch()">
             <i class="fa fa-spinner fa-spin" ng-class="{'zero-width': !searchData.isSearching}"></i> <!-- class reacts faster than ng-show and ng-if -->
             Search
         </a>
-        <a role="button" type="button" class="btn btn-primary" ng-click="deduplicate()()">
-            <i class="fa fa-spinner fa-spin" ng-class="{'zero-width': !isDeduping()}"></i>
-            Deduplicate
-        </a>
+        <deduplicate ng-controller="DedupeController"></deduplicate>
     </div>
 </nav>
