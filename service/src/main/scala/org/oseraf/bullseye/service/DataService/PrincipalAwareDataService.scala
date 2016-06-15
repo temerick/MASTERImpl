@@ -28,6 +28,15 @@ trait PrincipalAwareDataService extends DataService {
       case _ => BullsEyeGraph(List(), List())
     }
   }
+
+  def getNNeighborhood(p: Principal, entityId: EntityStore.ID, n: Int): BullsEyeGraph = {
+    filterGraph(p, super.getNNeighborhood(entityId, n))
+  }
+
+  def getNNeighborhoodForSearch(p: Principal, key: String, value: String, n: Int): BullsEyeGraph = {
+    filterGraph(p, super.getNNeighborhoodForSearch(key, value, n))
+  }
+
   def getBullsEyeEntityDetails(p:Principal, entityId: EntityStore.ID) : Option[BullsEyeEntity] = {
     val ent = super.getBullsEyeEntityDetails(entityId)
     if(isOK(p, ent)) Some(ent.copy(edges=filterEdgesFrom(p, ent)))

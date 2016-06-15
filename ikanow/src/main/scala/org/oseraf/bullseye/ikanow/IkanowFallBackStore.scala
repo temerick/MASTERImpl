@@ -6,6 +6,7 @@ import org.oseraf.bullseye.service.DataService._
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.slf4j.Logging
 import org.oseraf.bullseye.store.AttributeContainer.{KEY, VALUE}
+import org.oseraf.bullseye.store.EntityStore.ID
 import org.oseraf.bullseye.store._
 import org.oseraf.bullseye.store.impl.blueprints.BlueprintsGraphStore
 
@@ -18,6 +19,7 @@ class IkanowFallBackStore
     with NeighborhoodPlugin
     with SplicePlugin
     with Logging
+    with NNeighborhoodPlugin
 {
   var blueprintsGraphStore: BlueprintsGraphStore with WriteEventPublisherPlugin = null
   var ikanowRetriever: IkanowRetriever = null
@@ -140,6 +142,8 @@ class IkanowFallBackStore
 
   override def resolutionStore = blueprintsGraphStore
   override def spliceStore = this
+
+  override def nNeighborhood(entityId: ID, n: Int): (Set[ID], Set[(ID, String, ID)]) = ???
 }
 
 object IkanowFallBackStore {

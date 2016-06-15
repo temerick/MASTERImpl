@@ -73,6 +73,21 @@ trait DataAPI extends API with DataService with PrincipalAwareDataService with L
     getNeighborhood(principal, params("eId"))
   }
 
+  get("/nNeighborhoodForSearch") {
+    val principal = request.getUserPrincipal
+    val key: String = params("key")
+    val value: String = params("value")
+    val n: Int = params.getAs[Int]("n").get
+    getNNeighborhoodForSearch(principal, key, value, n)
+  }
+
+  get("/nNeighborhood") {
+    val principal = request.getUserPrincipal
+    val entityId = params("eId")
+    val n = params.getAs[Int]("n").get
+    getNNeighborhood(principal, entityId, n)
+  }
+
   get("/searchtypes") {
     bullseyeSearchTypes
   }

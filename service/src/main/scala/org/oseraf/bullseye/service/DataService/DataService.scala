@@ -12,7 +12,11 @@ case class BullsEyeEntity(id: String, attrs: Map[String, String] = Map(), edges:
 case class BullsEyeEntityScore(entity: BullsEyeEntity, score: Double)
 //source and target are entity ids
 case class BullsEyeEdge(source: String, target: String, attrs: Map[String, String] = Map())
-case class BullsEyeGraph(nodes: Seq[BullsEyeEntity], edges: Seq[BullsEyeEdge])
+case class BullsEyeGraph(nodes: Seq[BullsEyeEntity], edges: Seq[BullsEyeEdge]) {
+  def union(that: BullsEyeGraph): BullsEyeGraph = {
+    BullsEyeGraph((nodes ++ that.nodes).distinct, (edges ++ that.edges).distinct)
+  }
+}
 case class ScoredBullsEyeGraph(nodes: Seq[BullsEyeEntityScore], edges: Seq[BullsEyeEdge])
 case class BullsEyeSearchType(id: String, name: String)
 case class BullsEyeDedupeCandidate(entities: Iterable[BullsEyeEntity], score: Double)
@@ -140,6 +144,18 @@ trait DataService extends Service {
       nodeIdsEdges._1.map(eid => uic.EntityToBullsEyeEntity(eid, entityStore.entity(eid))).toSeq,
       nodeIdsEdges._2
     )
+  }
+
+  def getNNeighborhood(entityId: EntityStore.ID, n: Int): BullsEyeGraph = {
+    val (nodes, edges) = entityStore.nNeighborhood(entityId, n)
+    val bullsEyeNodes = nodes.map(getBullsEyeEntityDetails).toSeq
+    val bullsEyeEdges = edges.map{case (src, eId, tgt) => BullsEyeEdge(src, tgt, Map("id"-> eId))}.toSeq
+    BullsEyeGraph(bullsEyeNodes, bullsEyeEdges)
+  }
+
+  def getNNeighborhoodForSearch(key: String, value: String, n: Int): BullsEyeGraph = {
+    search(value, key).nodes
+      .foldLeft(BullsEyeGraph(Seq(), Seq()))((beg, ent) => beg union getNNeighborhood(ent.entity.id, n))
   }
 
   def bullseyeSearchTypes : Seq[BullsEyeSearchType] =

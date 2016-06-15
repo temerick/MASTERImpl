@@ -15,6 +15,7 @@ trait BullseyeEntityStore
      with NeighborhoodPlugin
      with AttributeBasedSearchAvailableOptionsPlugin
      with AttributeBasedNaivelyFuzzySearchPlugin
+     with NNeighborhoodPlugin
 {
   def setup(conf: Config)
   def spliceStore: EntityStore with SplicePlugin
@@ -64,6 +65,7 @@ class BlueprintsBullseyeEntityStore
   def updateEntity(id: EntityStore.ID, entity: Entity) = innerStore.updateEntity(id, entity)
   def updateRelationship(id: EntityStore.ID, relationship: Relationship) = innerStore.updateRelationship(id, relationship)
   def neighborhood(entityId: EntityStore.ID) = innerStore.neighborhood(entityId)
+  def nNeighborhood(entityId: EntityStore.ID, n: Int) = innerStore.nNeighborhood(entityId, n)
   
   val store: EntityStore = innerStore
 }

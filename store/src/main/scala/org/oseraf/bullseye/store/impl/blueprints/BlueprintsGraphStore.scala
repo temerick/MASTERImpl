@@ -33,6 +33,35 @@ trait BlueprintsNeighborhoodPlugin
     graph.getVertex(entityId).getEdges(Direction.BOTH).map(e => e.getId.toString)
 }
 
+trait BlueprintsNNeighborhoodPlugin extends BlueprintsPlugin with NNeighborhoodPlugin {
+  def nNeighborhood(entityId: EntityStore.ID, n: Int): (Set[EntityStore.ID], Set[(EntityStore.ID, String, EntityStore.ID)]) = {
+    nNeighborhood0(Set(entityId), Set(), Set(), n, 0)
+  }
+
+  private def nNeighborhood0(entsToQuery: Set[EntityStore.ID],
+                             entsSoFar: Set[EntityStore.ID],
+                             aggr: Set[(EntityStore.ID, String, EntityStore.ID)],
+                             n: Int,
+                             currN: Int): (Set[EntityStore.ID], Set[(EntityStore.ID, String, EntityStore.ID)]) = {
+    if(n > currN) {
+      val edges = entsToQuery.flatMap(entityId => graph.getVertex(entityId).getEdges(Direction.BOTH))
+      val newEntsSoFar = entsSoFar union entsToQuery
+      val edgeData = edges.map(edge =>
+        (edge.getVertex(Direction.OUT).getId.toString, edge.getId.toString, edge.getVertex(Direction.IN).getId.toString)
+      )
+      val newEntsToQuery = edgeData.flatMap(x => Set(x._1, x._3)).diff(newEntsSoFar)
+      nNeighborhood0(
+        newEntsToQuery,
+        newEntsSoFar,
+        aggr union edgeData,
+        n,
+        currN + 1
+      )
+    } else (entsSoFar union entsToQuery, aggr)
+  }
+
+}
+
 
 class BlueprintsGraphStore(val graph: Graph)
   extends EntityStore
@@ -42,6 +71,7 @@ class BlueprintsGraphStore(val graph: Graph)
     with BlueprintsEdgeIteratorPlugin
     with SplicePlugin
     with BruteForceAttributeBasedNaivelyFuzzySearchPlugin
+    with BlueprintsNNeighborhoodPlugin
 {
   override val store = this
 
